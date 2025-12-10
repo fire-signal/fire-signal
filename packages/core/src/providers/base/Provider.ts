@@ -1,5 +1,5 @@
-import { FSMessage } from '../core/Message';
-import { FSParsedUrl } from '../core/UrlParser';
+import { FSMessage } from '../../core/Message';
+import { FSParsedUrl } from '../../core/UrlParser';
 
 /**
  * Context provided to a provider when sending a notification.

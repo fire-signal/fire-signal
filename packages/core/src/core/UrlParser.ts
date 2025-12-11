@@ -85,47 +85,118 @@ export function parseFSUrl(raw: string): FSParsedUrl {
   // Replace custom schema with https for URL parsing
   const normalizedUrl = trimmed.replace(/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//, 'https://');
 
-  let parsed: URL;
+  let parsed: URL | null = null;
+  let hostname: string | undefined;
+  let port: number | undefined;
+  let username: string | undefined;
+  let password: string | undefined;
+  let pathWithoutSlash: string = '';
+  let params: Record<string, string | string[]> = {};
+
   try {
     parsed = new URL(normalizedUrl);
   } catch {
-    throw new FSParseError(`Failed to parse URL: ${raw}`, raw);
-  }
+    // Fallback: manual parsing for URLs with numeric hostnames (e.g., Discord webhooks)
+    // Pattern: schema://[user:pass@]host[:port][/path][?query]
+    const afterSchema = trimmed.slice(schemaMatch[0]!.length);
 
-  // Parse query parameters
-  const params: Record<string, string | string[]> = {};
-  parsed.searchParams.forEach((value, key) => {
-    const existing = params[key];
-    if (existing !== undefined) {
-      if (Array.isArray(existing)) {
-        existing.push(value);
+    // Split by ? to get path and query
+    const [pathPart, queryPart] = afterSchema.split('?');
+
+    // Split path by /
+    const pathSegments = (pathPart ?? '').split('/');
+
+    // First segment might contain auth and host
+    const firstSegment = pathSegments[0] ?? '';
+
+    // Check for auth (user:pass@host)
+    if (firstSegment.includes('@')) {
+      const [authPart, hostPart] = firstSegment.split('@');
+      if (authPart?.includes(':')) {
+        const [user, pass] = authPart.split(':');
+        username = user ? decodeURIComponent(user) : undefined;
+        password = pass ? decodeURIComponent(pass) : undefined;
       } else {
-        params[key] = [existing, value];
+        username = authPart ? decodeURIComponent(authPart) : undefined;
+      }
+
+      // Parse host:port
+      if (hostPart?.includes(':')) {
+        const [host, portStr] = hostPart.split(':');
+        hostname = host;
+        const parsedPort = parseInt(portStr ?? '', 10);
+        port = isNaN(parsedPort) ? undefined : parsedPort;
+      } else {
+        hostname = hostPart;
       }
     } else {
-      params[key] = value;
+      // No auth, just host:port
+      if (firstSegment.includes(':')) {
+        const [host, portStr] = firstSegment.split(':');
+        hostname = host;
+        const parsedPort = parseInt(portStr ?? '', 10);
+        port = isNaN(parsedPort) ? undefined : parsedPort;
+      } else {
+        hostname = firstSegment;
+      }
     }
-  });
 
-  // Parse path segments (remove leading slash and filter empty)
-  const pathWithoutSlash = parsed.pathname.slice(1);
-  const segments = pathWithoutSlash.split('/').filter(Boolean);
+    // Rest of path
+    pathWithoutSlash = pathSegments.slice(1).join('/');
 
-  // Parse port
-  let port: number | undefined;
-  if (parsed.port) {
-    port = parseInt(parsed.port, 10);
-    if (isNaN(port)) {
-      port = undefined;
+    // Parse query params
+    if (queryPart) {
+      const searchParams = new URLSearchParams(queryPart);
+      searchParams.forEach((value, key) => {
+        const existing = params[key];
+        if (existing !== undefined) {
+          if (Array.isArray(existing)) {
+            existing.push(value);
+          } else {
+            params[key] = [existing, value];
+          }
+        } else {
+          params[key] = value;
+        }
+      });
     }
   }
+
+  // If URL was parsed successfully, use those values
+  if (parsed) {
+    parsed.searchParams.forEach((value, key) => {
+      const existing = params[key];
+      if (existing !== undefined) {
+        if (Array.isArray(existing)) {
+          existing.push(value);
+        } else {
+          params[key] = [existing, value];
+        }
+      } else {
+        params[key] = value;
+      }
+    });
+
+    pathWithoutSlash = parsed.pathname.slice(1);
+    hostname = parsed.hostname || undefined;
+    username = parsed.username ? decodeURIComponent(parsed.username) : undefined;
+    password = parsed.password ? decodeURIComponent(parsed.password) : undefined;
+
+    if (parsed.port) {
+      const parsedPort = parseInt(parsed.port, 10);
+      port = isNaN(parsedPort) ? undefined : parsedPort;
+    }
+  }
+
+  // Parse path segments (filter empty)
+  const segments = pathWithoutSlash.split('/').filter(Boolean);
 
   return {
     schema,
-    hostname: parsed.hostname || undefined,
+    hostname,
     port,
-    username: parsed.username ? decodeURIComponent(parsed.username) : undefined,
-    password: parsed.password ? decodeURIComponent(parsed.password) : undefined,
+    username,
+    password,
     path: pathWithoutSlash || undefined,
     segments,
     params,

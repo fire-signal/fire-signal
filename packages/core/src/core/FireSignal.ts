@@ -6,6 +6,7 @@ import { FSMessage } from './Message';
 import { FSParsedUrl, parseFSUrl } from './UrlParser';
 import { FSProviderNotFoundError } from './errors';
 import { FSProvider, FSProviderResult } from '../providers/base/Provider';
+import { createDefaultProviders } from '../providers';
 import { loadFSConfig, FSConfigEntry } from '../config/ConfigLoader';
 import { loadUrlsFromEnv, loadConfigPathsFromEnv } from '../config/env';
 import { filterByTags, TaggedUrl } from '../config/tags';
@@ -21,7 +22,7 @@ export interface FireSignalOptions {
   urls?: string[];
 
   /**
-   * Custom providers to register.
+   * Custom providers to register (in addition to built-in ones).
    */
   providers?: FSProvider[];
 
@@ -40,6 +41,12 @@ export interface FireSignalOptions {
    * @default true
    */
   autoLoadConfig?: boolean;
+
+  /**
+   * Whether to skip registering built-in providers.
+   * @default false
+   */
+  skipDefaultProviders?: boolean;
 }
 
 /**
@@ -75,6 +82,13 @@ export class FireSignal {
   constructor(options: FireSignalOptions = {}) {
     this.logger = options.logger ?? silentLogger;
     this.configPaths = options.configPaths ?? [];
+
+    // Register built-in providers by default
+    if (!options.skipDefaultProviders) {
+      for (const provider of createDefaultProviders()) {
+        this.registerProvider(provider);
+      }
+    }
 
     // Register custom providers
     for (const provider of options.providers ?? []) {

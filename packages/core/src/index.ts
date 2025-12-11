@@ -33,6 +33,18 @@ export type { FSParsedUrl } from './core/UrlParser';
 export { BaseProvider } from './providers/base/Provider';
 export { DEFAULT_PROVIDER_CONFIG } from './providers/base/ProviderConfig';
 
+// Built-in Providers
+export {
+  SmtpProvider,
+  DiscordWebhookProvider,
+  RocketChatWebhookProvider,
+  SlackWebhookProvider,
+  TelegramBotProvider,
+  JsonWebhookProvider,
+  createDefaultProviders,
+  PROVIDER_SCHEMAS,
+} from './providers';
+
 // Providers - Types
 export type { FSProvider, FSProviderContext, FSProviderResult } from './providers/base/Provider';
 export type { FSProviderConfig } from './providers/base/ProviderConfig';

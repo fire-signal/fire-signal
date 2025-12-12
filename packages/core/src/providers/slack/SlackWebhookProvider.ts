@@ -1,55 +1,54 @@
+import { BaseProvider, FSProviderContext, FSProviderResult, FSParsedUrl } from '../base/Provider';
+import type { FSMessage } from '../../core/Message';
+
 /**
  * Slack Webhook Provider.
  *
- * URL Format: slack://hookPath/hookToken1/hookToken2
- * Or simpler: slack://T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX
+ * URL Format: slack://T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX
  *
  * Query params:
- *   - channel: Channel to post to (e.g., #general or @username)
- *   - username: Bot username
- *   - icon_emoji: Emoji to use as icon (e.g., :robot:)
- *   - icon_url: URL to icon image
+ *  - channel: Channel to post to (e.g., #general or @username)
+ *  - username: Bot username
+ *  - icon_emoji: Emoji to use as icon (e.g., :robot:)
+ *  - icon_url: URL to icon image
  */
-
-import { BaseProvider, FSProviderContext, FSProviderResult } from '../base/Provider';
-import { FSMessage } from '../../core/Message';
-
 export class SlackWebhookProvider extends BaseProvider {
   readonly id = 'slack';
   readonly schemas = ['slack'];
 
+  parseUrl(raw: string): FSParsedUrl {
+    const schema = this.extractSchema(raw);
+    const afterSchema = raw.slice(`${schema}://`.length);
+    const [pathPart, queryPart] = afterSchema.split('?');
+    const segments = (pathPart ?? '').split('/').filter(Boolean);
+
+    return {
+      schema,
+      hostname: segments[0],
+      segments: segments.slice(1),
+      path: segments.slice(1).join('/'),
+      params: this.parseQueryParams(queryPart ?? ''),
+      raw,
+    };
+  }
+
   async send(message: FSMessage, ctx: FSProviderContext): Promise<FSProviderResult> {
     const { parsed } = ctx;
-
-    // URL format: slack://hookPath/token1/token2
-    // Example: slack://T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX
     const hookParts = [parsed.hostname, ...parsed.segments].filter(Boolean);
 
     if (hookParts.length < 3) {
-      return this.failure(
-        new Error(
-          'Invalid Slack URL. Expected: slack://T.../B.../XXX or slack://hooks.slack.com/services/T.../B.../XXX'
-        )
-      );
+      return this.failure(new Error('Invalid Slack URL. Expected: slack://T.../B.../XXX'));
     }
 
-    // Handle both formats:
-    // 1. slack://T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX
-    // 2. slack://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX
     let webhookUrl: string;
     if (parsed.hostname === 'hooks.slack.com') {
-      const path = parsed.path || '';
-      webhookUrl = `https://hooks.slack.com/${path}`;
+      webhookUrl = `https://hooks.slack.com/${parsed.path || ''}`;
     } else {
       webhookUrl = `https://hooks.slack.com/services/${hookParts.join('/')}`;
     }
 
-    // Build Slack payload
-    const payload: Record<string, unknown> = {
-      text: this.formatContent(message),
-    };
+    const payload: Record<string, unknown> = { text: this.formatContent(message) };
 
-    // Optional params
     const channel = this.getParam(parsed.params.channel);
     const username = this.getParam(parsed.params.username);
     const iconEmoji = this.getParam(parsed.params.icon_emoji);
@@ -63,10 +62,7 @@ export class SlackWebhookProvider extends BaseProvider {
     try {
       const response = await fetch(webhookUrl, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'User-Agent': 'fire-signal/0.1.0',
-        },
+        headers: { 'Content-Type': 'application/json', 'User-Agent': 'fire-signal/0.1.0' },
         body: JSON.stringify(payload),
       });
 
@@ -78,7 +74,6 @@ export class SlackWebhookProvider extends BaseProvider {
         });
       }
 
-      // Slack returns 'ok' as text on success
       const text = await response.text();
       return this.success({ response: text });
     } catch (error) {
@@ -87,14 +82,7 @@ export class SlackWebhookProvider extends BaseProvider {
   }
 
   private formatContent(message: FSMessage): string {
-    if (message.title) {
-      return `*${message.title}*\n${message.body}`;
-    }
+    if (message.title) return `*${message.title}*\n${message.body}`;
     return message.body;
-  }
-
-  private getParam(value: string | string[] | undefined): string | undefined {
-    if (Array.isArray(value)) return value[0];
-    return value;
   }
 }

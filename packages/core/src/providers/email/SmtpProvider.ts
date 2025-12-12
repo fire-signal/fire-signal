@@ -1,23 +1,72 @@
+import nodemailer from 'nodemailer';
+import type { Transporter } from 'nodemailer';
+import { BaseProvider, FSProviderContext, FSProviderResult, FSParsedUrl } from '../base/Provider';
+import type { FSMessage } from '../../core/Message';
+
 /**
  * SMTP Email Provider.
  *
  * URL Format: mailto://user:pass@smtp.example.com:port
+ *
  * Query params:
- *   - to: Recipient email(s), comma-separated
- *   - from: Sender email (optional, defaults to user)
- *   - cc: CC recipients
- *   - bcc: BCC recipients
- *   - secure: Use TLS (true/false, default based on port)
+ *  - to: Recipient email(s), comma-separated
+ *  - from: Sender email (optional, defaults to user)
+ *  - cc: CC recipients
+ *  - bcc: BCC recipients
+ *  - secure: Use TLS (true/false, default based on port)
  */
-
-import nodemailer from 'nodemailer';
-import type { Transporter } from 'nodemailer';
-import { BaseProvider, FSProviderContext, FSProviderResult } from '../base/Provider';
-import { FSMessage } from '../../core/Message';
-
 export class SmtpProvider extends BaseProvider {
   readonly id = 'smtp';
   readonly schemas = ['mailto', 'mailtos'];
+
+  parseUrl(raw: string): FSParsedUrl {
+    const schema = this.extractSchema(raw);
+    const afterSchema = raw.slice(`${schema}://`.length);
+    const [pathPart, queryPart] = afterSchema.split('?');
+
+    let username: string | undefined;
+    let password: string | undefined;
+    let hostname: string | undefined;
+    let port: number | undefined;
+
+    if (pathPart?.includes('@')) {
+      const [authPart, hostPart] = pathPart.split('@');
+      if (authPart?.includes(':')) {
+        const [user, pass] = authPart.split(':');
+        username = user ? decodeURIComponent(user) : undefined;
+        password = pass ? decodeURIComponent(pass) : undefined;
+      } else {
+        username = authPart ? decodeURIComponent(authPart) : undefined;
+      }
+
+      if (hostPart?.includes(':')) {
+        const colonIndex = hostPart.lastIndexOf(':');
+        const potentialPort = hostPart.slice(colonIndex + 1);
+        if (/^\d+$/.test(potentialPort)) {
+          hostname = hostPart.slice(0, colonIndex);
+          port = parseInt(potentialPort, 10);
+        } else {
+          hostname = hostPart;
+        }
+      } else {
+        hostname = hostPart;
+      }
+    } else {
+      hostname = pathPart;
+    }
+
+    return {
+      schema,
+      hostname,
+      port,
+      username,
+      password,
+      segments: [],
+      path: undefined,
+      params: this.parseQueryParams(queryPart ?? ''),
+      raw,
+    };
+  }
 
   async send(message: FSMessage, ctx: FSProviderContext): Promise<FSProviderResult> {
     const { parsed } = ctx;
@@ -33,26 +82,20 @@ export class SmtpProvider extends BaseProvider {
       return this.failure(new Error('Missing "to" parameter in mailto URL'));
     }
 
-    // Determine port and security
     const defaultPort = parsed.schema === 'mailtos' ? 465 : 587;
     const port = parsed.port ?? defaultPort;
     const secure = parsed.schema === 'mailtos' || port === 465;
 
-    // Create transporter
     const transporter: Transporter = nodemailer.createTransport({
       host: parsed.hostname,
       port,
       secure,
       auth:
         parsed.username && parsed.password
-          ? {
-              user: parsed.username,
-              pass: parsed.password,
-            }
+          ? { user: parsed.username, pass: parsed.password }
           : undefined,
     });
 
-    // Build email options
     const from =
       this.getParam(parsed.params.from) ?? parsed.username ?? 'noreply@fire-signal.local';
     const cc = this.getParam(parsed.params.cc);
@@ -81,24 +124,18 @@ export class SmtpProvider extends BaseProvider {
   }
 
   private formatHtml(message: FSMessage): string {
+    const escape = (text: string) =>
+      text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;')
+        .replace(/\n/g, '<br>');
+
     if (message.title) {
-      return `<h2>${this.escapeHtml(message.title)}</h2><p>${this.escapeHtml(message.body)}</p>`;
+      return `<h2>${escape(message.title)}</h2><p>${escape(message.body)}</p>`;
     }
-    return `<p>${this.escapeHtml(message.body)}</p>`;
-  }
-
-  private escapeHtml(text: string): string {
-    return text
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;')
-      .replace(/\n/g, '<br>');
-  }
-
-  private getParam(value: string | string[] | undefined): string | undefined {
-    if (Array.isArray(value)) return value[0];
-    return value;
+    return `<p>${escape(message.body)}</p>`;
   }
 }

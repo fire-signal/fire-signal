@@ -1,11 +1,6 @@
-/**
- * FireSignal - Main notification class.
- */
-
-import { FSMessage } from './Message';
-import { FSParsedUrl, parseFSUrl } from './UrlParser';
+import type { FSMessage } from './Message';
 import { FSProviderNotFoundError } from './errors';
-import { FSProvider, FSProviderResult } from '../providers/base/Provider';
+import type { FSProvider, FSProviderResult } from '../providers/base/Provider';
 import { createDefaultProviders } from '../providers';
 import { loadFSConfig, FSConfigEntry } from '../config/ConfigLoader';
 import { loadUrlsFromEnv, loadConfigPathsFromEnv } from '../config/env';
@@ -16,36 +11,17 @@ import { LoggerFn, silentLogger } from '../utils/logger';
  * Options for creating a FireSignal instance.
  */
 export interface FireSignalOptions {
-  /**
-   * Initial URLs to add.
-   */
+  /** Initial URLs to add. */
   urls?: string[];
-
-  /**
-   * Custom providers to register (in addition to built-in ones).
-   */
+  /** Custom providers to register (in addition to built-in ones). */
   providers?: FSProvider[];
-
-  /**
-   * Logger function for debugging.
-   */
+  /** Logger function for debugging. */
   logger?: LoggerFn;
-
-  /**
-   * Additional config file paths to load.
-   */
+  /** Additional config file paths to load. */
   configPaths?: string[];
-
-  /**
-   * Whether to automatically load config from default paths.
-   * @default true
-   */
+  /** Whether to automatically load config from default paths. @default true */
   autoLoadConfig?: boolean;
-
-  /**
-   * Whether to skip registering built-in providers.
-   * @default false
-   */
+  /** Whether to skip registering built-in providers. @default false */
   skipDefaultProviders?: boolean;
 }
 
@@ -53,10 +29,7 @@ export interface FireSignalOptions {
  * Options for sending a notification.
  */
 export interface SendOptions {
-  /**
-   * Tags to filter URLs. Only URLs with matching tags will receive the notification.
-   * If empty or not provided, all URLs will receive the notification.
-   */
+  /** Tags to filter URLs. Only URLs with matching tags will receive the notification. */
   tags?: string[];
 }
 
@@ -83,26 +56,23 @@ export class FireSignal {
     this.logger = options.logger ?? silentLogger;
     this.configPaths = options.configPaths ?? [];
 
-    // Register built-in providers by default
     if (!options.skipDefaultProviders) {
       for (const provider of createDefaultProviders()) {
         this.registerProvider(provider);
       }
     }
 
-    // Register custom providers
     for (const provider of options.providers ?? []) {
       this.registerProvider(provider);
     }
 
-    // Add initial URLs
     if (options.urls) {
       this.add(options.urls);
     }
   }
 
   /**
-   * Registers a provider.
+   * Registers a provider for its supported schemas.
    */
   registerProvider(provider: FSProvider): void {
     for (const schema of provider.schemas) {
@@ -119,18 +89,14 @@ export class FireSignal {
    */
   add(urlOrUrls: string | string[], tags: string[] = []): void {
     const urls = Array.isArray(urlOrUrls) ? urlOrUrls : [urlOrUrls];
-
     for (const url of urls) {
-      if (url && url.trim()) {
+      if (url?.trim()) {
         this.entries.push({ url: url.trim(), tags });
         this.logger(`Added URL: ${url}`, 'debug');
       }
     }
   }
 
-  /**
-   * Adds URLs from configuration entries.
-   */
   private addFromConfig(entries: FSConfigEntry[]): void {
     for (const entry of entries) {
       this.entries.push({ url: entry.url, tags: entry.tags ?? [] });
@@ -141,20 +107,16 @@ export class FireSignal {
    * Loads configuration from files and environment variables.
    */
   async loadConfig(): Promise<void> {
-    if (this.configLoaded) {
-      return;
-    }
+    if (this.configLoaded) return;
 
     this.logger('Loading configuration...', 'debug');
 
-    // Load from environment variables
     const envUrls = loadUrlsFromEnv();
     if (envUrls.length > 0) {
       this.logger(`Found ${envUrls.length} URLs from environment`, 'debug');
       this.add(envUrls);
     }
 
-    // Load from config files
     const envConfigPaths = loadConfigPathsFromEnv();
     const allConfigPaths = [...this.configPaths, ...envConfigPaths];
     const config = await loadFSConfig(allConfigPaths);
@@ -167,25 +129,24 @@ export class FireSignal {
     this.configLoaded = true;
   }
 
-  /**
-   * Returns all registered URLs.
-   */
+  /** Returns all registered URLs. */
   getUrls(): string[] {
     return this.entries.map((e) => e.url);
   }
 
-  /**
-   * Returns all entries with tags.
-   */
+  /** Returns all entries with tags. */
   getEntries(): TaggedUrl[] {
     return [...this.entries];
   }
 
-  /**
-   * Gets a provider by schema.
-   */
+  /** Gets a provider by schema. */
   getProvider(schema: string): FSProvider | undefined {
     return this.providers.get(schema.toLowerCase());
+  }
+
+  private extractSchema(url: string): string {
+    const match = url.match(/^([a-zA-Z][a-zA-Z0-9+.-]*):/);
+    return match?.[1]?.toLowerCase() ?? '';
   }
 
   /**
@@ -197,8 +158,6 @@ export class FireSignal {
    */
   async send(message: FSMessage, options: SendOptions = {}): Promise<FSProviderResult[]> {
     const results: FSProviderResult[] = [];
-
-    // Filter URLs by tags
     const urls = filterByTags(this.entries, options.tags);
 
     if (urls.length === 0) {
@@ -208,35 +167,24 @@ export class FireSignal {
 
     this.logger(`Sending to ${urls.length} URL(s)`, 'info');
 
-    // Send to each URL
     for (const rawUrl of urls) {
-      let parsed: FSParsedUrl;
-
-      try {
-        parsed = parseFSUrl(rawUrl);
-      } catch (error) {
-        results.push({
-          success: false,
-          providerId: 'unknown',
-          error: error instanceof Error ? error : new Error(String(error)),
-        });
-        continue;
-      }
-
-      const provider = this.providers.get(parsed.schema);
+      const schema = this.extractSchema(rawUrl);
+      const provider = this.providers.get(schema);
 
       if (!provider) {
         results.push({
           success: false,
-          providerId: parsed.schema,
-          error: new FSProviderNotFoundError(parsed.schema),
+          providerId: schema || 'unknown',
+          error: new FSProviderNotFoundError(schema),
         });
-        this.logger(`No provider for schema: ${parsed.schema}`, 'warn');
+        this.logger(`No provider for schema: ${schema}`, 'warn');
         continue;
       }
 
       try {
+        const parsed = provider.parseUrl(rawUrl);
         this.logger(`Sending via ${provider.id}...`, 'debug');
+
         const result = await provider.send(message, {
           url: rawUrl,
           parsed,
@@ -251,11 +199,7 @@ export class FireSignal {
         }
       } catch (error) {
         const err = error instanceof Error ? error : new Error(String(error));
-        results.push({
-          success: false,
-          providerId: provider.id,
-          error: err,
-        });
+        results.push({ success: false, providerId: provider.id, error: err });
         this.logger(`[${provider.id}] ERROR: ${err.message}`, 'error');
       }
     }

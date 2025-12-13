@@ -12,6 +12,7 @@ Send notifications to multiple platforms (Discord, Slack, Telegram, Email, Rocke
 - 💻 **CLI tool** – `fire-signal` command for shell scripts and automation
 - 📁 **Config file support** – YAML configuration with tags
 - 🌍 **Environment variables** – Configure via `FIRE_SIGNAL_URLS`
+- 🔧 **Provider-specific URL parsing** – Each provider handles its own URL format
 
 ## Installation
 
@@ -32,8 +33,8 @@ import { FireSignal } from '@fire-signal/core';
 
 const fs = new FireSignal({
   urls: [
-    'discord://webhookId/webhookToken',
-    'tgram://botToken/chatId',
+    'discord://1234567890/abcdefghijk',
+    'tgram://123456789:AABBccDDeeFF/987654321',
     'mailto://user:pass@smtp.example.com?to=team@example.com',
   ],
 });
@@ -81,11 +82,11 @@ fire-signal -t "Alert" -b "Issue!" -g critical
 discord://webhookId/webhookToken?username=Bot&avatar_url=https://...
 ```
 
-### Slack
-
-```
-slack://T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX?channel=#general
-```
+- `webhookId`: Discord webhook ID (numeric)
+- `webhookToken`: Discord webhook token
+- `username`: (optional) Bot display name
+- `avatar_url`: (optional) Avatar URL
+- `tts`: (optional) Text-to-speech (true/false)
 
 ### Telegram
 
@@ -93,12 +94,37 @@ slack://T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX?channel=#general
 tgram://botToken/chatId?parse_mode=Markdown
 ```
 
+- `botToken`: Full bot token (e.g., `123456789:AABBccDDeeFF`)
+- `chatId`: Chat/group/channel ID (can be negative for groups)
+- `parse_mode`: (optional) HTML, Markdown, or MarkdownV2
+- `disable_web_page_preview`: (optional) true/false
+- `disable_notification`: (optional) true/false
+
+### Slack
+
+```
+slack://T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX?channel=#general
+```
+
+- Format: `slack://teamId/botId/token`
+- `channel`: (optional) Override channel
+- `username`: (optional) Bot username
+- `icon_emoji`: (optional) Emoji icon (e.g., `:robot:`)
+- `icon_url`: (optional) Icon URL
+
 ### Email (SMTP)
 
 ```
-mailto://user:pass@smtp.example.com?to=email@example.com&from=noreply@example.com
-mailtos://user:pass@smtp.example.com:465?to=email@example.com  # TLS
+mailto://user:pass@smtp.example.com?to=email@example.com
+mailtos://user:pass@smtp.example.com:465?to=email@example.com
 ```
+
+- `mailto://`: SMTP (port 587 default)
+- `mailtos://`: SMTP with TLS (port 465 default)
+- `to`: (required) Recipient email(s)
+- `from`: (optional) Sender email
+- `cc`: (optional) CC recipients
+- `bcc`: (optional) BCC recipients
 
 ### Rocket.Chat
 
@@ -106,12 +132,24 @@ mailtos://user:pass@smtp.example.com:465?to=email@example.com  # TLS
 rocketchat://hostname/webhookToken?channel=#general&alias=Bot
 ```
 
+- `hostname`: Rocket.Chat server hostname
+- `webhookToken`: Webhook token
+- `channel`: (optional) Channel to post to
+- `alias`: (optional) Bot alias
+- `avatar`: (optional) Avatar URL
+- `emoji`: (optional) Emoji avatar
+
 ### Generic JSON Webhook
 
 ```
 json://api.example.com/webhook?method=POST
-jsons://api.example.com/webhook  # HTTPS
+jsons://api.example.com/webhook
 ```
+
+- `json://`: HTTP
+- `jsons://`: HTTPS
+- `method`: (optional) HTTP method (default: POST)
+- `content_type`: (optional) Content-Type header
 
 ## Configuration File
 
@@ -160,17 +198,17 @@ Usage: fire-signal [options] [urls...]
 Unified notification CLI for Node/TypeScript
 
 Arguments:
-  urls                    Notification URLs to send to
+  urls                     Notification URLs to send to
 
 Options:
-  -V, --version           output the version number
-  -t, --title <title>     Notification title/subject
-  -b, --body <body>       Notification body; if absent, reads from stdin
-  -g, --tag <tags...>     Tags to filter URLs
-  -c, --config <paths...> Additional config file paths
-  -v, --verbose           Enable verbose logging
-  -q, --quiet             Suppress output except errors
-  -h, --help              display help for command
+  -V, --version            output the version number
+  -t, --title <title>      Notification title/subject
+  -b, --body <body>        Notification body; if absent, reads from stdin
+  -g, --tag <tags...>      Tags to filter URLs
+  -c, --config <paths...>  Additional config file paths
+  -v, --verbose            Enable verbose logging
+  -q, --quiet              Suppress output except errors
+  -h, --help               display help for command
 ```
 
 ## API Reference
@@ -179,17 +217,21 @@ Options:
 
 ```typescript
 interface FireSignalOptions {
-  urls?: string[]; // Initial URLs
-  providers?: FSProvider[]; // Custom providers
-  logger?: LoggerFn; // Custom logger
-  configPaths?: string[]; // Additional config paths
-  skipDefaultProviders?: boolean; // Skip built-in providers
+  urls?: string[];
+  providers?: FSProvider[];
+  logger?: LoggerFn;
+  configPaths?: string[];
+  skipDefaultProviders?: boolean;
 }
 
 class FireSignal {
   constructor(options?: FireSignalOptions);
+  registerProvider(provider: FSProvider): void;
   add(urls: string | string[], tags?: string[]): void;
   loadConfig(): Promise<void>;
+  getUrls(): string[];
+  getEntries(): TaggedUrl[];
+  getProvider(schema: string): FSProvider | undefined;
   send(message: FSMessage, options?: SendOptions): Promise<FSProviderResult[]>;
 }
 ```
@@ -198,12 +240,64 @@ class FireSignal {
 
 ```typescript
 interface FSMessage {
-  title?: string; // Notification title
-  body: string; // Notification body (required)
+  title?: string;
+  body: string;
   attachments?: FSAttachment[];
   tags?: string[];
   metadata?: Record<string, unknown>;
 }
+```
+
+### `FSProvider`
+
+```typescript
+interface FSProvider {
+  id: string;
+  schemas: string[];
+  parseUrl(raw: string): FSParsedUrl;
+  send(message: FSMessage, ctx: FSProviderContext): Promise<FSProviderResult>;
+}
+```
+
+## Custom Providers
+
+You can create custom providers by extending `BaseProvider`:
+
+```typescript
+import { BaseProvider, FSProviderContext, FSProviderResult, FSParsedUrl } from '@fire-signal/core';
+import type { FSMessage } from '@fire-signal/core';
+
+class MyCustomProvider extends BaseProvider {
+  readonly id = 'custom';
+  readonly schemas = ['custom'];
+
+  parseUrl(raw: string): FSParsedUrl {
+    const schema = this.extractSchema(raw);
+    const afterSchema = raw.slice(`${schema}://`.length);
+    const [pathPart, queryPart] = afterSchema.split('?');
+    const segments = (pathPart ?? '').split('/').filter(Boolean);
+
+    return {
+      schema,
+      hostname: segments[0],
+      segments: segments.slice(1),
+      path: segments.slice(1).join('/'),
+      params: this.parseQueryParams(queryPart ?? ''),
+      raw,
+    };
+  }
+
+  async send(message: FSMessage, ctx: FSProviderContext): Promise<FSProviderResult> {
+    // Your custom logic here
+    return this.success({ sent: true });
+  }
+}
+
+// Register your provider
+const fs = new FireSignal({
+  providers: [new MyCustomProvider()],
+  urls: ['custom://my-service/endpoint'],
+});
 ```
 
 ## License

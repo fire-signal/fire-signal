@@ -1,37 +1,58 @@
-# 🔥 Fire-Signal
+<p align="center">
+  <img src="https://raw.githubusercontent.com/fire-signal/fire-signal/main/docs/logo.svg" alt="Fire-Signal" width="200" />
+</p>
 
-**Unified notification library for Node/TypeScript.**
+<h1 align="center">🔥 Fire-Signal</h1>
 
-Send notifications to multiple platforms (Discord, Slack, Telegram, Email, Rocket.Chat, and more) through a single, unified API.
+<p align="center">
+  <strong>Unified notification library for Node.js and TypeScript</strong>
+</p>
 
-## Features
+<p align="center">
+  <a href="https://www.npmjs.com/package/@fire-signal/core"><img src="https://img.shields.io/npm/v/@fire-signal/core?style=flat-square&color=orange" alt="npm version" /></a>
+  <a href="https://www.npmjs.com/package/@fire-signal/core"><img src="https://img.shields.io/npm/dm/@fire-signal/core?style=flat-square&color=blue" alt="npm downloads" /></a>
+  <a href="https://github.com/fire-signal/fire-signal/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="license" /></a>
+  <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/node-%3E%3D18-brightgreen?style=flat-square" alt="node version" /></a>
+  <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/typescript-%3E%3D5.0-blue?style=flat-square" alt="typescript" /></a>
+</p>
 
-- 📦 **Multi-platform support** – Send to all configured channels or filter by tags
-- 🔗 **URL-based configuration** – Simple URL schemas like `discord://`, `slack://`, `mailto://`
-- ⚡ **Programmatic API** – Use as a TypeScript/JavaScript library
-- 💻 **CLI tool** – `fire-signal` command for shell scripts and automation
-- 📁 **Config file support** – YAML configuration with tags
-- 🌍 **Environment variables** – Configure via `FIRE_SIGNAL_URLS`
-- 🔧 **Provider-specific URL parsing** – Each provider handles its own URL format
+<p align="center">
+  Send notifications to <strong>Discord</strong>, <strong>Slack</strong>, <strong>Telegram</strong>, <strong>Email</strong>, <strong>Rocket.Chat</strong>, and more through a single, unified API.
+</p>
 
-## Installation
+---
+
+## ✨ Features
+
+- 📦 **Multi-platform** – Send to all configured channels or filter by tags
+- 🔗 **URL-based config** – Simple schemas like `discord://`, `slack://`, `tgram://`
+- ⚡ **TypeScript first** – Full type safety and IntelliSense support
+- 💻 **CLI included** – `fire-signal` command for shell scripts
+- 📁 **YAML config** – Configure channels with tags in `~/.fire-signal.yml`
+- 🌍 **ENV support** – Set URLs via `FIRE_SIGNAL_URLS`
+- 🔧 **Extensible** – Create custom providers easily
+
+## 📦 Installation
 
 ```bash
+# npm
 npm install @fire-signal/core
-# or
+
+# pnpm
 pnpm add @fire-signal/core
-# or
+
+# yarn
 yarn add @fire-signal/core
 ```
 
-## Quick Start
+## 🚀 Quick Start
 
 ### Programmatic API
 
 ```typescript
 import { FireSignal } from '@fire-signal/core';
 
-const fs = new FireSignal({
+const fire = new FireSignal({
   urls: [
     'discord://1234567890/abcdefghijk',
     'tgram://123456789:AABBccDDeeFF/987654321',
@@ -40,10 +61,10 @@ const fs = new FireSignal({
 });
 
 // Send to ALL platforms
-await fs.send({ title: 'Deploy Complete', body: 'v1.2.0 is now live!' });
+await fire.send({ title: 'Deploy Complete', body: 'v1.2.0 is now live!' });
 
 // Send only to specific tags
-await fs.send({ title: 'Alert', body: 'High CPU usage detected!' }, { tags: ['critical'] });
+await fire.send({ title: 'Alert', body: 'High CPU usage detected!' }, { tags: ['critical'] });
 ```
 
 ### CLI Usage
@@ -59,11 +80,11 @@ fire-signal -t "Deploy" -b "Done!"
 # Read body from stdin
 echo "Task completed successfully" | fire-signal -t "Automation"
 
-# Filter by tags (uses config file)
+# Filter by tags
 fire-signal -t "Alert" -b "Issue!" -g critical
 ```
 
-## Supported Providers
+## 📡 Supported Providers
 
 | Provider    | Schema(s)                    | Description             |
 | ----------- | ---------------------------- | ----------------------- |
@@ -74,84 +95,112 @@ fire-signal -t "Alert" -b "Issue!" -g critical
 | Rocket.Chat | `rocketchat://`, `rocket://` | Rocket.Chat webhooks    |
 | JSON        | `json://`, `jsons://`        | Generic JSON webhook    |
 
-## URL Formats
+## 🔗 URL Formats
 
-### Discord
+<details>
+<summary><strong>Discord</strong></summary>
 
 ```
 discord://webhookId/webhookToken?username=Bot&avatar_url=https://...
 ```
 
-- `webhookId`: Discord webhook ID (numeric)
-- `webhookToken`: Discord webhook token
-- `username`: (optional) Bot display name
-- `avatar_url`: (optional) Avatar URL
-- `tts`: (optional) Text-to-speech (true/false)
+| Parameter      | Description                 |
+| -------------- | --------------------------- |
+| `webhookId`    | Webhook ID (numeric)        |
+| `webhookToken` | Webhook token               |
+| `username`     | Bot display name            |
+| `avatar_url`   | Avatar URL                  |
+| `tts`          | Text-to-speech (true/false) |
 
-### Telegram
+</details>
+
+<details>
+<summary><strong>Telegram</strong></summary>
 
 ```
 tgram://botToken/chatId?parse_mode=Markdown
 ```
 
-- `botToken`: Full bot token (e.g., `123456789:AABBccDDeeFF`)
-- `chatId`: Chat/group/channel ID (can be negative for groups)
-- `parse_mode`: (optional) HTML, Markdown, or MarkdownV2
-- `disable_web_page_preview`: (optional) true/false
-- `disable_notification`: (optional) true/false
+| Parameter                  | Description                      |
+| -------------------------- | -------------------------------- |
+| `botToken`                 | Full bot token (e.g., `123:ABC`) |
+| `chatId`                   | Chat ID (negative for groups)    |
+| `parse_mode`               | HTML, Markdown, or MarkdownV2    |
+| `disable_web_page_preview` | Disable link previews            |
+| `disable_notification`     | Send silently                    |
 
-### Slack
+</details>
+
+<details>
+<summary><strong>Slack</strong></summary>
 
 ```
 slack://T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX?channel=#general
 ```
 
-- Format: `slack://teamId/botId/token`
-- `channel`: (optional) Override channel
-- `username`: (optional) Bot username
-- `icon_emoji`: (optional) Emoji icon (e.g., `:robot:`)
-- `icon_url`: (optional) Icon URL
+| Parameter    | Description                  |
+| ------------ | ---------------------------- |
+| `channel`    | Override channel             |
+| `username`   | Bot username                 |
+| `icon_emoji` | Emoji icon (e.g., `:robot:`) |
+| `icon_url`   | Icon URL                     |
 
-### Email (SMTP)
+</details>
+
+<details>
+<summary><strong>Email (SMTP)</strong></summary>
 
 ```
 mailto://user:pass@smtp.example.com?to=email@example.com
 mailtos://user:pass@smtp.example.com:465?to=email@example.com
 ```
 
-- `mailto://`: SMTP (port 587 default)
-- `mailtos://`: SMTP with TLS (port 465 default)
-- `to`: (required) Recipient email(s)
-- `from`: (optional) Sender email
-- `cc`: (optional) CC recipients
-- `bcc`: (optional) BCC recipients
+| Schema       | Description             |
+| ------------ | ----------------------- |
+| `mailto://`  | SMTP (port 587 default) |
+| `mailtos://` | SMTP + TLS (port 465)   |
 
-### Rocket.Chat
+| Parameter | Description        |
+| --------- | ------------------ |
+| `to`      | Recipient email(s) |
+| `from`    | Sender email       |
+| `cc`      | CC recipients      |
+| `bcc`     | BCC recipients     |
+
+</details>
+
+<details>
+<summary><strong>Rocket.Chat</strong></summary>
 
 ```
 rocketchat://hostname/webhookToken?channel=#general&alias=Bot
 ```
 
-- `hostname`: Rocket.Chat server hostname
-- `webhookToken`: Webhook token
-- `channel`: (optional) Channel to post to
-- `alias`: (optional) Bot alias
-- `avatar`: (optional) Avatar URL
-- `emoji`: (optional) Emoji avatar
+| Parameter | Description     |
+| --------- | --------------- |
+| `channel` | Channel to post |
+| `alias`   | Bot alias       |
+| `avatar`  | Avatar URL      |
+| `emoji`   | Emoji avatar    |
 
-### Generic JSON Webhook
+</details>
+
+<details>
+<summary><strong>Generic JSON</strong></summary>
 
 ```
-json://api.example.com/webhook?method=POST
-jsons://api.example.com/webhook
+json://api.example.com/webhook
+jsons://api.example.com/webhook   # HTTPS
 ```
 
-- `json://`: HTTP
-- `jsons://`: HTTPS
-- `method`: (optional) HTTP method (default: POST)
-- `content_type`: (optional) Content-Type header
+| Parameter      | Description                 |
+| -------------- | --------------------------- |
+| `method`       | HTTP method (default: POST) |
+| `content_type` | Content-Type header         |
 
-## Configuration File
+</details>
+
+## 📁 Configuration File
 
 Create `~/.fire-signal.yml`:
 
@@ -163,80 +212,67 @@ urls:
     tags: ['critical']
   - url: 'mailto://user:pass@smtp.example.com?to=team@example.com'
     tags: ['email', 'critical']
-  - url: 'rocketchat://chat.example.com/webhookToken'
-    tags: ['devteam']
 ```
-
-Then use tags to filter:
 
 ```typescript
-const fs = new FireSignal();
-await fs.loadConfig();
+const fire = new FireSignal();
+await fire.loadConfig();
 
 // Send only to devteam
-await fs.send({ title: 'Build Ready', body: 'PR passed' }, { tags: ['devteam'] });
+await fire.send({ title: 'Build Ready', body: 'PR passed' }, { tags: ['devteam'] });
 
-// Send to critical channels only
-await fs.send({ title: 'ALERT', body: 'Server down!' }, { tags: ['critical'] });
+// Send to critical channels
+await fire.send({ title: 'ALERT', body: 'Server down!' }, { tags: ['critical'] });
 
-// Send to ALL configured URLs
-await fs.send({ title: 'Update', body: 'New version available' });
+// Send to ALL
+await fire.send({ title: 'Update', body: 'New version available' });
 ```
 
-## Environment Variables
+## 🌍 Environment Variables
 
 | Variable                  | Description                                    |
 | ------------------------- | ---------------------------------------------- |
 | `FIRE_SIGNAL_URLS`        | Comma/space separated notification URLs        |
 | `FIRE_SIGNAL_CONFIG_PATH` | Additional config file paths (colon separated) |
 
-## CLI Options
+## 💻 CLI Reference
 
 ```
 Usage: fire-signal [options] [urls...]
 
-Unified notification CLI for Node/TypeScript
-
 Arguments:
-  urls                     Notification URLs to send to
+  urls                     Notification URLs
 
 Options:
-  -V, --version            output the version number
-  -t, --title <title>      Notification title/subject
-  -b, --body <body>        Notification body; if absent, reads from stdin
-  -g, --tag <tags...>      Tags to filter URLs
-  -c, --config <paths...>  Additional config file paths
-  -v, --verbose            Enable verbose logging
-  -q, --quiet              Suppress output except errors
-  -h, --help               display help for command
+  -V, --version            Version number
+  -t, --title <title>      Notification title
+  -b, --body <body>        Notification body (or stdin)
+  -g, --tag <tags...>      Filter by tags
+  -c, --config <paths...>  Additional config paths
+  -v, --verbose            Verbose logging
+  -q, --quiet              Errors only
+  -h, --help               Help
 ```
 
-## API Reference
+## 📖 API Reference
 
-### `FireSignal`
+### FireSignal
 
 ```typescript
-interface FireSignalOptions {
-  urls?: string[];
-  providers?: FSProvider[];
-  logger?: LoggerFn;
-  configPaths?: string[];
-  skipDefaultProviders?: boolean;
-}
+const fire = new FireSignal({
+  urls: string[];              // Initial URLs
+  providers: FSProvider[];     // Custom providers
+  logger: LoggerFn;            // Custom logger
+  configPaths: string[];       // Config paths
+  skipDefaultProviders: boolean; // Skip built-ins
+});
 
-class FireSignal {
-  constructor(options?: FireSignalOptions);
-  registerProvider(provider: FSProvider): void;
-  add(urls: string | string[], tags?: string[]): void;
-  loadConfig(): Promise<void>;
-  getUrls(): string[];
-  getEntries(): TaggedUrl[];
-  getProvider(schema: string): FSProvider | undefined;
-  send(message: FSMessage, options?: SendOptions): Promise<FSProviderResult[]>;
-}
+fire.add(urls, tags?);         // Add URLs
+await fire.loadConfig();       // Load config
+await fire.send(message, opts); // Send notification
 ```
 
-### `FSMessage`
+### FSMessage
 
 ```typescript
 interface FSMessage {
@@ -248,30 +284,16 @@ interface FSMessage {
 }
 ```
 
-### `FSProvider`
+## 🔧 Custom Providers
 
 ```typescript
-interface FSProvider {
-  id: string;
-  schemas: string[];
-  parseUrl(raw: string): FSParsedUrl;
-  send(message: FSMessage, ctx: FSProviderContext): Promise<FSProviderResult>;
-}
-```
+import { BaseProvider } from '@fire-signal/core';
 
-## Custom Providers
-
-You can create custom providers by extending `BaseProvider`:
-
-```typescript
-import { BaseProvider, FSProviderContext, FSProviderResult, FSParsedUrl } from '@fire-signal/core';
-import type { FSMessage } from '@fire-signal/core';
-
-class MyCustomProvider extends BaseProvider {
+class MyProvider extends BaseProvider {
   readonly id = 'custom';
   readonly schemas = ['custom'];
 
-  parseUrl(raw: string): FSParsedUrl {
+  parseUrl(raw: string) {
     const schema = this.extractSchema(raw);
     const afterSchema = raw.slice(`${schema}://`.length);
     const [pathPart, queryPart] = afterSchema.split('?');
@@ -287,19 +309,22 @@ class MyCustomProvider extends BaseProvider {
     };
   }
 
-  async send(message: FSMessage, ctx: FSProviderContext): Promise<FSProviderResult> {
-    // Your custom logic here
+  async send(message, ctx) {
+    // Your logic here
     return this.success({ sent: true });
   }
 }
 
-// Register your provider
-const fs = new FireSignal({
-  providers: [new MyCustomProvider()],
+const fire = new FireSignal({
+  providers: [new MyProvider()],
   urls: ['custom://my-service/endpoint'],
 });
 ```
 
-## License
+## 🤝 Contributing
 
-MIT
+Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md) first.
+
+## 📄 License
+
+MIT © Fire-Signal Contributors

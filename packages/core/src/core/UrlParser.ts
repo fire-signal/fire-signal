@@ -130,21 +130,23 @@ export function parseFSUrl(raw: string): FSParsedUrl {
         hostname = hostPart;
       }
     } else {
-      // No auth, just host:port
-      if (firstSegment.includes(':')) {
-        const [host, portStr] = firstSegment.split(':');
-        hostname = host;
-        const parsedPort = parseInt(portStr ?? '', 10);
-        port = isNaN(parsedPort) ? undefined : parsedPort;
+      const colonIndex = firstSegment.lastIndexOf(':');
+      if (colonIndex !== -1) {
+        const potentialPort = firstSegment.slice(colonIndex + 1);
+        const parsedPort = parseInt(potentialPort, 10);
+        if (!isNaN(parsedPort) && /^\d+$/.test(potentialPort)) {
+          hostname = firstSegment.slice(0, colonIndex);
+          port = parsedPort;
+        } else {
+          hostname = firstSegment;
+        }
       } else {
         hostname = firstSegment;
       }
     }
 
-    // Rest of path
     pathWithoutSlash = pathSegments.slice(1).join('/');
 
-    // Parse query params
     if (queryPart) {
       const searchParams = new URLSearchParams(queryPart);
       searchParams.forEach((value, key) => {
@@ -162,7 +164,6 @@ export function parseFSUrl(raw: string): FSParsedUrl {
     }
   }
 
-  // If URL was parsed successfully, use those values
   if (parsed) {
     parsed.searchParams.forEach((value, key) => {
       const existing = params[key];
@@ -188,7 +189,6 @@ export function parseFSUrl(raw: string): FSParsedUrl {
     }
   }
 
-  // Parse path segments (filter empty)
   const segments = pathWithoutSlash.split('/').filter(Boolean);
 
   return {

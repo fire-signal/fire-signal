@@ -1,53 +1,46 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/fire-signal/fire-signal/main/docs/logo.svg" alt="Fire-Signal" width="200" />
+  <img src="https://em-content.zobj.net/source/apple/391/fire_1f525.png" alt="Fire-Signal" width="80" />
 </p>
 
-<h1 align="center">🔥 Fire-Signal</h1>
+<h1 align="center">Fire-Signal</h1>
 
 <p align="center">
-  <strong>Unified notification library for Node.js and TypeScript</strong>
-</p>
-
-<p align="center">
-  <a href="https://www.npmjs.com/package/@fire-signal/core"><img src="https://img.shields.io/npm/v/@fire-signal/core?style=flat-square&color=orange" alt="npm version" /></a>
-  <a href="https://www.npmjs.com/package/@fire-signal/core"><img src="https://img.shields.io/npm/dm/@fire-signal/core?style=flat-square&color=blue" alt="npm downloads" /></a>
-  <a href="https://github.com/fire-signal/fire-signal/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="license" /></a>
-  <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/node-%3E%3D18-brightgreen?style=flat-square" alt="node version" /></a>
-  <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/typescript-%3E%3D5.0-blue?style=flat-square" alt="typescript" /></a>
+  <strong>One call. Every channel. Zero hassle.</strong>
 </p>
 
 <p align="center">
-  Send notifications to <strong>Discord</strong>, <strong>Slack</strong>, <strong>Telegram</strong>, <strong>Email</strong>, <strong>Rocket.Chat</strong>, and more through a single, unified API.
+  Stop juggling SDKs. Fire-Signal broadcasts your notifications to Discord, Slack, Telegram, Email, and more — simultaneously.
 </p>
+
+<p align="center">
+  <a href="https://www.npmjs.com/package/@fire-signal/core"><img src="https://img.shields.io/npm/v/@fire-signal/core?style=for-the-badge&color=ff6b35&label=npm" alt="npm" /></a>
+  <a href="https://www.npmjs.com/package/@fire-signal/core"><img src="https://img.shields.io/npm/dm/@fire-signal/core?style=for-the-badge&color=0d96f2&label=downloads" alt="downloads" /></a>
+  <img src="https://img.shields.io/badge/TypeScript-Ready-3178c6?style=for-the-badge&logo=typescript&logoColor=white" alt="typescript" />
+  <a href="https://github.com/fire-signal/fire-signal/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-22c55e?style=for-the-badge" alt="license" /></a>
+</p>
+
+<br />
 
 ---
 
-## ✨ Features
+## 💡 The Problem
 
-- 📦 **Multi-platform** – Send to all configured channels or filter by tags
-- 🔗 **URL-based config** – Simple schemas like `discord://`, `slack://`, `tgram://`
-- ⚡ **TypeScript first** – Full type safety and IntelliSense support
-- 💻 **CLI included** – `fire-signal` command for shell scripts
-- 📁 **YAML config** – Configure channels with tags in `~/.fire-signal.yml`
-- 🌍 **ENV support** – Set URLs via `FIRE_SIGNAL_URLS`
-- 🔧 **Extensible** – Create custom providers easily
+You're building an app and need to notify your team when:
 
-## 📦 Installation
+- A deploy completes
+- A payment fails
+- A user signs up
+- An error occurs in production
 
-```bash
-# npm
-npm install @fire-signal/core
+Some team members prefer **Discord**. Others use **Slack**. Your ops team needs **email**. And you want real-time alerts on **Telegram**.
 
-# pnpm
-pnpm add @fire-signal/core
+**Without Fire-Signal:** You maintain 4+ different integrations, each with their own API, error handling, and configuration.
 
-# yarn
-yarn add @fire-signal/core
-```
+**With Fire-Signal:** One line of code. All channels. Done.
 
-## 🚀 Quick Start
+---
 
-### Programmatic API
+## ⚡ Quick Example
 
 ```typescript
 import { FireSignal } from '@fire-signal/core';
@@ -55,45 +48,221 @@ import { FireSignal } from '@fire-signal/core';
 const fire = new FireSignal({
   urls: [
     'discord://1234567890/abcdefghijk',
-    'tgram://123456789:AABBccDDeeFF/987654321',
-    'mailto://user:pass@smtp.example.com?to=team@example.com',
+    'tgram://123456789:AABBccDD/987654321',
+    'slack://T00000/B00000/XXXXXX',
+    'mailto://user:pass@smtp.gmail.com?to=team@company.com',
   ],
 });
 
-// Send to ALL platforms
-await fire.send({ title: 'Deploy Complete', body: 'v1.2.0 is now live!' });
-
-// Send only to specific tags
-await fire.send({ title: 'Alert', body: 'High CPU usage detected!' }, { tags: ['critical'] });
+// One call. Every channel.
+await fire.send({
+  title: '🚀 Deploy Successful',
+  body: 'Production updated to v2.1.0',
+});
 ```
 
-### CLI Usage
+---
+
+## 📦 Installation
 
 ```bash
-# Send to specific URLs
-fire-signal -t "Build Complete" -b "PR #123 merged" discord://id/token
-
-# Use environment variable
-export FIRE_SIGNAL_URLS="discord://id/token slack://T.../B.../XXX"
-fire-signal -t "Deploy" -b "Done!"
-
-# Read body from stdin
-echo "Task completed successfully" | fire-signal -t "Automation"
-
-# Filter by tags
-fire-signal -t "Alert" -b "Issue!" -g critical
+npm install @fire-signal/core
 ```
 
-## 📡 Supported Providers
+<details>
+<summary>Other package managers</summary>
 
-| Provider    | Schema(s)                    | Description             |
-| ----------- | ---------------------------- | ----------------------- |
-| Discord     | `discord://`                 | Discord webhooks        |
-| Slack       | `slack://`                   | Slack incoming webhooks |
-| Telegram    | `tgram://`, `telegram://`    | Telegram Bot API        |
-| Email       | `mailto://`, `mailtos://`    | SMTP via nodemailer     |
-| Rocket.Chat | `rocketchat://`, `rocket://` | Rocket.Chat webhooks    |
-| JSON        | `json://`, `jsons://`        | Generic JSON webhook    |
+```bash
+pnpm add @fire-signal/core
+yarn add @fire-signal/core
+```
+
+</details>
+
+---
+
+## 🏗️ Framework Integration
+
+### NestJS
+
+```typescript
+// notifications.service.ts
+import { Injectable, OnModuleInit } from '@nestjs/common';
+import { FireSignal } from '@fire-signal/core';
+
+@Injectable()
+export class NotificationsService implements OnModuleInit {
+  private fire: FireSignal;
+
+  onModuleInit() {
+    this.fire = new FireSignal({
+      urls: [process.env.DISCORD_WEBHOOK, process.env.TELEGRAM_BOT_URL],
+    });
+  }
+
+  async notifyTeam(title: string, body: string) {
+    await this.fire.send({ title, body });
+  }
+
+  async alertCritical(message: string) {
+    await this.fire.send({ title: '🚨 CRITICAL', body: message }, { tags: ['oncall'] });
+  }
+}
+```
+
+```typescript
+// notifications.module.ts
+@Module({
+  providers: [NotificationsService],
+  exports: [NotificationsService],
+})
+export class NotificationsModule {}
+```
+
+### Next.js (App Router)
+
+```typescript
+// lib/fire-signal.ts
+import { FireSignal } from '@fire-signal/core';
+
+export const fire = new FireSignal({
+  urls: [process.env.DISCORD_WEBHOOK!, process.env.SLACK_WEBHOOK!],
+});
+```
+
+```typescript
+// app/api/webhooks/stripe/route.ts
+import { fire } from '@/lib/fire-signal';
+
+export async function POST(req: Request) {
+  const event = await req.json();
+
+  if (event.type === 'payment_intent.succeeded') {
+    await fire.send({
+      title: '💰 Payment Received',
+      body: `$${event.data.object.amount / 100} from ${event.data.object.customer}`,
+    });
+  }
+
+  return Response.json({ received: true });
+}
+```
+
+### Express
+
+```typescript
+// lib/notifications.ts
+import { FireSignal } from '@fire-signal/core';
+
+export const fire = new FireSignal({
+  urls: process.env.FIRE_SIGNAL_URLS?.split(',') || [],
+});
+```
+
+```typescript
+// routes/users.ts
+import { fire } from '../lib/notifications';
+
+router.post('/signup', async (req, res) => {
+  const user = await createUser(req.body);
+
+  await fire.send({
+    title: '👤 New User',
+    body: `${user.name} (${user.email}) just signed up!`,
+  });
+
+  res.json(user);
+});
+```
+
+### Fastify
+
+```typescript
+// plugins/fire-signal.ts
+import fp from 'fastify-plugin';
+import { FireSignal } from '@fire-signal/core';
+
+export default fp(async (fastify) => {
+  const fire = new FireSignal({
+    urls: [fastify.config.DISCORD_WEBHOOK],
+  });
+
+  fastify.decorate('fire', fire);
+});
+```
+
+```typescript
+// routes/orders.ts
+fastify.post('/orders', async (request, reply) => {
+  const order = await createOrder(request.body);
+
+  await fastify.fire.send({
+    title: '🛒 New Order',
+    body: `Order #${order.id} - $${order.total}`,
+  });
+
+  return order;
+});
+```
+
+### Node.js Scripts / CI/CD
+
+```bash
+# In your CI pipeline
+npm install -g @fire-signal/core
+
+# After deploy
+fire-signal -t "✅ Deploy Complete" -b "Deployed to production" \
+  discord://webhook/token \
+  tgram://bot/chat
+```
+
+```typescript
+// scripts/backup.ts
+import { FireSignal } from '@fire-signal/core';
+
+const fire = new FireSignal({ urls: [process.env.ALERTS_WEBHOOK!] });
+
+async function runBackup() {
+  try {
+    await performBackup();
+    await fire.send({ title: '✅ Backup Complete', body: `Size: ${size}MB` });
+  } catch (error) {
+    await fire.send({ title: '❌ Backup Failed', body: error.message });
+    process.exit(1);
+  }
+}
+```
+
+---
+
+## ✨ Features
+
+| Feature                        | Description                                                |
+| ------------------------------ | ---------------------------------------------------------- |
+| 📡 **Multi-channel broadcast** | Discord, Slack, Telegram, Email, Rocket.Chat, and webhooks |
+| 🔗 **URL-based config**        | No complex setup — just `discord://webhook/token`          |
+| 🏷️ **Tag-based routing**       | Send critical alerts only to on-call channels              |
+| 💻 **CLI included**            | Integrate into shell scripts and CI/CD                     |
+| 📁 **Config file support**     | Centralize channels in `~/.fire-signal.yml`                |
+| ⚡ **TypeScript native**       | Full type safety and autocomplete                          |
+| 🔧 **Extensible**              | Create custom providers in minutes                         |
+| 🪶 **Lightweight**             | Minimal dependencies                                       |
+
+---
+
+## 📡 Supported Channels
+
+| Channel     | Schema                      |
+| ----------- | --------------------------- |
+| Discord     | `discord://`                |
+| Telegram    | `tgram://` `telegram://`    |
+| Slack       | `slack://`                  |
+| Email       | `mailto://` `mailtos://`    |
+| Rocket.Chat | `rocketchat://` `rocket://` |
+| Webhook     | `json://` `jsons://`        |
+
+---
 
 ## 🔗 URL Formats
 
@@ -101,16 +270,10 @@ fire-signal -t "Alert" -b "Issue!" -g critical
 <summary><strong>Discord</strong></summary>
 
 ```
-discord://webhookId/webhookToken?username=Bot&avatar_url=https://...
+discord://webhookId/webhookToken?username=Bot&avatar_url=...
 ```
 
-| Parameter      | Description                 |
-| -------------- | --------------------------- |
-| `webhookId`    | Webhook ID (numeric)        |
-| `webhookToken` | Webhook token               |
-| `username`     | Bot display name            |
-| `avatar_url`   | Avatar URL                  |
-| `tts`          | Text-to-speech (true/false) |
+Get your webhook URL from Discord → Server Settings → Integrations → Webhooks
 
 </details>
 
@@ -121,13 +284,9 @@ discord://webhookId/webhookToken?username=Bot&avatar_url=https://...
 tgram://botToken/chatId?parse_mode=Markdown
 ```
 
-| Parameter                  | Description                      |
-| -------------------------- | -------------------------------- |
-| `botToken`                 | Full bot token (e.g., `123:ABC`) |
-| `chatId`                   | Chat ID (negative for groups)    |
-| `parse_mode`               | HTML, Markdown, or MarkdownV2    |
-| `disable_web_page_preview` | Disable link previews            |
-| `disable_notification`     | Send silently                    |
+1. Create a bot with [@BotFather](https://t.me/BotFather)
+2. Get your chat ID from [@userinfobot](https://t.me/userinfobot)
+3. For groups, use negative chat IDs
 
 </details>
 
@@ -135,15 +294,10 @@ tgram://botToken/chatId?parse_mode=Markdown
 <summary><strong>Slack</strong></summary>
 
 ```
-slack://T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX?channel=#general
+slack://T00000000/B00000000/XXXXXXXX?channel=#alerts
 ```
 
-| Parameter    | Description                  |
-| ------------ | ---------------------------- |
-| `channel`    | Override channel             |
-| `username`   | Bot username                 |
-| `icon_emoji` | Emoji icon (e.g., `:robot:`) |
-| `icon_url`   | Icon URL                     |
+Create an Incoming Webhook in your Slack workspace settings
 
 </details>
 
@@ -151,21 +305,11 @@ slack://T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX?channel=#general
 <summary><strong>Email (SMTP)</strong></summary>
 
 ```
-mailto://user:pass@smtp.example.com?to=email@example.com
-mailtos://user:pass@smtp.example.com:465?to=email@example.com
+mailto://user:pass@smtp.gmail.com?to=team@company.com
+mailtos://user:pass@smtp.gmail.com:465?to=team@company.com
 ```
 
-| Schema       | Description             |
-| ------------ | ----------------------- |
-| `mailto://`  | SMTP (port 587 default) |
-| `mailtos://` | SMTP + TLS (port 465)   |
-
-| Parameter | Description        |
-| --------- | ------------------ |
-| `to`      | Recipient email(s) |
-| `from`    | Sender email       |
-| `cc`      | CC recipients      |
-| `bcc`     | BCC recipients     |
+For Gmail, use an App Password (not your regular password)
 
 </details>
 
@@ -173,32 +317,24 @@ mailtos://user:pass@smtp.example.com:465?to=email@example.com
 <summary><strong>Rocket.Chat</strong></summary>
 
 ```
-rocketchat://hostname/webhookToken?channel=#general&alias=Bot
+rocketchat://chat.example.com/webhookToken?channel=#general
 ```
-
-| Parameter | Description     |
-| --------- | --------------- |
-| `channel` | Channel to post |
-| `alias`   | Bot alias       |
-| `avatar`  | Avatar URL      |
-| `emoji`   | Emoji avatar    |
 
 </details>
 
 <details>
-<summary><strong>Generic JSON</strong></summary>
+<summary><strong>Generic Webhook</strong></summary>
 
 ```
 json://api.example.com/webhook
 jsons://api.example.com/webhook   # HTTPS
 ```
 
-| Parameter      | Description                 |
-| -------------- | --------------------------- |
-| `method`       | HTTP method (default: POST) |
-| `content_type` | Content-Type header         |
+Sends JSON payload with `title`, `body`, `tags`, and `metadata`
 
 </details>
+
+---
 
 ## 📁 Configuration File
 
@@ -207,124 +343,144 @@ Create `~/.fire-signal.yml`:
 ```yaml
 urls:
   - url: 'discord://webhookId/webhookToken'
-    tags: ['devteam', 'alerts']
+    tags: ['team', 'deploys']
+
   - url: 'tgram://botToken/chatId'
+    tags: ['critical', 'oncall']
+
+  - url: 'mailto://user:pass@smtp.gmail.com?to=ops@company.com'
     tags: ['critical']
-  - url: 'mailto://user:pass@smtp.example.com?to=team@example.com'
-    tags: ['email', 'critical']
 ```
 
 ```typescript
 const fire = new FireSignal();
 await fire.loadConfig();
 
-// Send only to devteam
-await fire.send({ title: 'Build Ready', body: 'PR passed' }, { tags: ['devteam'] });
+// Only team channels
+await fire.send({ body: 'Build passed' }, { tags: ['team'] });
 
-// Send to critical channels
-await fire.send({ title: 'ALERT', body: 'Server down!' }, { tags: ['critical'] });
-
-// Send to ALL
-await fire.send({ title: 'Update', body: 'New version available' });
+// Only critical (Telegram + Email)
+await fire.send({ body: 'Server down!' }, { tags: ['critical'] });
 ```
+
+---
 
 ## 🌍 Environment Variables
 
-| Variable                  | Description                                    |
-| ------------------------- | ---------------------------------------------- |
-| `FIRE_SIGNAL_URLS`        | Comma/space separated notification URLs        |
-| `FIRE_SIGNAL_CONFIG_PATH` | Additional config file paths (colon separated) |
+```bash
+# Space or comma separated URLs
+FIRE_SIGNAL_URLS="discord://... tgram://... slack://..."
 
-## 💻 CLI Reference
-
+# Additional config file paths
+FIRE_SIGNAL_CONFIG_PATH="/etc/fire-signal.yml:~/.fire-signal.yml"
 ```
-Usage: fire-signal [options] [urls...]
 
-Arguments:
-  urls                     Notification URLs
+---
+
+## 💻 CLI
+
+```bash
+fire-signal -t "Title" -b "Body" [urls...]
 
 Options:
-  -V, --version            Version number
   -t, --title <title>      Notification title
-  -b, --body <body>        Notification body (or stdin)
+  -b, --body <body>        Notification body (or pipe from stdin)
   -g, --tag <tags...>      Filter by tags
   -c, --config <paths...>  Additional config paths
-  -v, --verbose            Verbose logging
+  -v, --verbose            Debug output
   -q, --quiet              Errors only
-  -h, --help               Help
 ```
 
-## 📖 API Reference
+Examples:
 
-### FireSignal
+```bash
+# Direct
+fire-signal -t "Deploy" -b "Done!" discord://id/token
 
-```typescript
-const fire = new FireSignal({
-  urls: string[];              // Initial URLs
-  providers: FSProvider[];     // Custom providers
-  logger: LoggerFn;            // Custom logger
-  configPaths: string[];       // Config paths
-  skipDefaultProviders: boolean; // Skip built-ins
-});
+# From env
+export FIRE_SIGNAL_URLS="discord://id/token tgram://bot/chat"
+fire-signal -t "Alert" -b "Check logs"
 
-fire.add(urls, tags?);         // Add URLs
-await fire.loadConfig();       // Load config
-await fire.send(message, opts); // Send notification
+# Pipe
+echo "Build completed" | fire-signal -t "CI"
+
+# Tags
+fire-signal -t "Critical" -b "Error!" -g oncall
 ```
 
-### FSMessage
-
-```typescript
-interface FSMessage {
-  title?: string;
-  body: string;
-  attachments?: FSAttachment[];
-  tags?: string[];
-  metadata?: Record<string, unknown>;
-}
-```
+---
 
 ## 🔧 Custom Providers
 
 ```typescript
 import { BaseProvider } from '@fire-signal/core';
 
-class MyProvider extends BaseProvider {
-  readonly id = 'custom';
-  readonly schemas = ['custom'];
+class PagerDutyProvider extends BaseProvider {
+  readonly id = 'pagerduty';
+  readonly schemas = ['pagerduty'];
 
   parseUrl(raw: string) {
-    const schema = this.extractSchema(raw);
-    const afterSchema = raw.slice(`${schema}://`.length);
-    const [pathPart, queryPart] = afterSchema.split('?');
-    const segments = (pathPart ?? '').split('/').filter(Boolean);
-
-    return {
-      schema,
-      hostname: segments[0],
-      segments: segments.slice(1),
-      path: segments.slice(1).join('/'),
-      params: this.parseQueryParams(queryPart ?? ''),
-      raw,
-    };
+    // Parse pagerduty://routing-key
   }
 
   async send(message, ctx) {
-    // Your logic here
-    return this.success({ sent: true });
+    await fetch('https://events.pagerduty.com/v2/enqueue', {
+      method: 'POST',
+      body: JSON.stringify({
+        routing_key: ctx.parsed.hostname,
+        event_action: 'trigger',
+        payload: { summary: message.body, severity: 'critical' },
+      }),
+    });
+    return this.success();
   }
 }
 
 const fire = new FireSignal({
-  providers: [new MyProvider()],
-  urls: ['custom://my-service/endpoint'],
+  providers: [new PagerDutyProvider()],
+  urls: ['pagerduty://your-routing-key'],
 });
 ```
 
+---
+
+## 📖 API Reference
+
+```typescript
+const fire = new FireSignal({
+  urls?: string[];
+  providers?: FSProvider[];
+  skipDefaultProviders?: boolean;
+});
+
+fire.add(urls: string | string[], tags?: string[]);
+await fire.loadConfig();
+await fire.send(message: FSMessage, options?: { tags?: string[] });
+```
+
+```typescript
+interface FSMessage {
+  title?: string;
+  body: string;
+  tags?: string[];
+  metadata?: Record<string, unknown>;
+}
+```
+
+---
+
 ## 🤝 Contributing
 
-Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md) first.
+Contributions welcome! Please open an issue first to discuss what you'd like to change.
+
+---
 
 ## 📄 License
 
-MIT © Fire-Signal Contributors
+[MIT](LICENSE)
+
+---
+
+<p align="center">
+  Made with 🔥 by the Fire-Signal contributors
+</p>

@@ -1,4 +1,9 @@
-import { BaseProvider, FSProviderContext, FSProviderResult, FSParsedUrl } from '../base/Provider';
+import {
+  BaseProvider,
+  FSProviderContext,
+  FSProviderResult,
+  FSParsedUrl,
+} from '../base/Provider';
 import type { FSMessage } from '../../core/Message';
 
 /**
@@ -31,14 +36,19 @@ export class DiscordWebhookProvider extends BaseProvider {
     };
   }
 
-  async send(message: FSMessage, ctx: FSProviderContext): Promise<FSProviderResult> {
+  async send(
+    message: FSMessage,
+    ctx: FSProviderContext
+  ): Promise<FSProviderResult> {
     const { parsed } = ctx;
     const webhookId = parsed.hostname;
     const webhookToken = parsed.segments[0];
 
     if (!webhookId || !webhookToken) {
       return this.failure(
-        new Error('Invalid Discord URL. Expected: discord://webhookId/webhookToken')
+        new Error(
+          'Invalid Discord URL. Expected: discord://webhookId/webhookToken'
+        )
       );
     }
 
@@ -58,21 +68,29 @@ export class DiscordWebhookProvider extends BaseProvider {
     try {
       const response = await fetch(webhookUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'User-Agent': 'fire-signal/0.1.0' },
+        headers: {
+          'Content-Type': 'application/json',
+          'User-Agent': 'fire-signal/0.1.0',
+        },
         body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
         const text = await response.text().catch(() => '');
-        return this.failure(new Error(`Discord API error ${response.status}: ${text}`), {
-          status: response.status,
-          text,
-        });
+        return this.failure(
+          new Error(`Discord API error ${response.status}: ${text}`),
+          {
+            status: response.status,
+            text,
+          }
+        );
       }
 
       return this.success({ status: response.status });
     } catch (error) {
-      return this.failure(error instanceof Error ? error : new Error(String(error)));
+      return this.failure(
+        error instanceof Error ? error : new Error(String(error))
+      );
     }
   }
 

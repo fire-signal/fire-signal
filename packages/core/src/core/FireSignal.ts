@@ -77,7 +77,10 @@ export class FireSignal {
   registerProvider(provider: FSProvider): void {
     for (const schema of provider.schemas) {
       this.providers.set(schema.toLowerCase(), provider);
-      this.logger(`Registered provider '${provider.id}' for schema '${schema}'`, 'debug');
+      this.logger(
+        `Registered provider '${provider.id}' for schema '${schema}'`,
+        'debug'
+      );
     }
   }
 
@@ -122,7 +125,10 @@ export class FireSignal {
     const config = await loadFSConfig(allConfigPaths);
 
     if (config.entries.length > 0) {
-      this.logger(`Loaded ${config.entries.length} URLs from config files`, 'debug');
+      this.logger(
+        `Loaded ${config.entries.length} URLs from config files`,
+        'debug'
+      );
       this.addFromConfig(config.entries);
     }
 
@@ -156,7 +162,10 @@ export class FireSignal {
    * @param options - Send options (e.g., tag filtering)
    * @returns Array of results from each provider
    */
-  async send(message: FSMessage, options: SendOptions = {}): Promise<FSProviderResult[]> {
+  async send(
+    message: FSMessage,
+    options: SendOptions = {}
+  ): Promise<FSProviderResult[]> {
     const results: FSProviderResult[] = [];
     const urls = filterByTags(this.entries, options.tags);
 
@@ -195,7 +204,10 @@ export class FireSignal {
         if (result.success) {
           this.logger(`[${provider.id}] OK`, 'info');
         } else {
-          this.logger(`[${provider.id}] FAILED: ${result.error?.message}`, 'error');
+          this.logger(
+            `[${provider.id}] FAILED: ${result.error?.message}`,
+            'error'
+          );
         }
       } catch (error) {
         const err = error instanceof Error ? error : new Error(String(error));

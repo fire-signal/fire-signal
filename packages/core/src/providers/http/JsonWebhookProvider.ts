@@ -1,4 +1,9 @@
-import { BaseProvider, FSProviderContext, FSProviderResult, FSParsedUrl } from '../base/Provider';
+import {
+  BaseProvider,
+  FSProviderContext,
+  FSProviderResult,
+  FSParsedUrl,
+} from '../base/Provider';
 import type { FSMessage } from '../../core/Message';
 
 /**
@@ -44,10 +49,14 @@ export class JsonWebhookProvider extends BaseProvider {
     };
   }
 
-  async send(message: FSMessage, ctx: FSProviderContext): Promise<FSProviderResult> {
+  async send(
+    message: FSMessage,
+    ctx: FSProviderContext
+  ): Promise<FSProviderResult> {
     const { parsed } = ctx;
     const method = this.getParam(parsed.params.method) ?? 'POST';
-    const contentType = this.getParam(parsed.params.content_type) ?? 'application/json';
+    const contentType =
+      this.getParam(parsed.params.content_type) ?? 'application/json';
 
     const protocol = parsed.schema === 'jsons' ? 'https' : 'http';
     const port = parsed.port ? `:${parsed.port}` : '';
@@ -64,14 +73,19 @@ export class JsonWebhookProvider extends BaseProvider {
     try {
       const response = await fetch(url, {
         method,
-        headers: { 'Content-Type': contentType, 'User-Agent': 'fire-signal/0.1.0' },
+        headers: {
+          'Content-Type': contentType,
+          'User-Agent': 'fire-signal/0.1.0',
+        },
         body,
       });
 
       if (!response.ok) {
         const text = await response.text().catch(() => '');
         return this.failure(
-          new Error(`HTTP ${response.status}: ${response.statusText} - ${text}`),
+          new Error(
+            `HTTP ${response.status}: ${response.statusText} - ${text}`
+          ),
           { status: response.status, text }
         );
       }
@@ -79,7 +93,9 @@ export class JsonWebhookProvider extends BaseProvider {
       const responseData = await response.json().catch(() => ({}));
       return this.success(responseData);
     } catch (error) {
-      return this.failure(error instanceof Error ? error : new Error(String(error)));
+      return this.failure(
+        error instanceof Error ? error : new Error(String(error))
+      );
     }
   }
 }

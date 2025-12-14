@@ -1,4 +1,9 @@
-import { BaseProvider, FSProviderContext, FSProviderResult, FSParsedUrl } from '../base/Provider';
+import {
+  BaseProvider,
+  FSProviderContext,
+  FSProviderResult,
+  FSParsedUrl,
+} from '../base/Provider';
 import type { FSMessage } from '../../core/Message';
 
 /**
@@ -32,12 +37,17 @@ export class SlackWebhookProvider extends BaseProvider {
     };
   }
 
-  async send(message: FSMessage, ctx: FSProviderContext): Promise<FSProviderResult> {
+  async send(
+    message: FSMessage,
+    ctx: FSProviderContext
+  ): Promise<FSProviderResult> {
     const { parsed } = ctx;
     const hookParts = [parsed.hostname, ...parsed.segments].filter(Boolean);
 
     if (hookParts.length < 3) {
-      return this.failure(new Error('Invalid Slack URL. Expected: slack://T.../B.../XXX'));
+      return this.failure(
+        new Error('Invalid Slack URL. Expected: slack://T.../B.../XXX')
+      );
     }
 
     let webhookUrl: string;
@@ -47,7 +57,9 @@ export class SlackWebhookProvider extends BaseProvider {
       webhookUrl = `https://hooks.slack.com/services/${hookParts.join('/')}`;
     }
 
-    const payload: Record<string, unknown> = { text: this.formatContent(message) };
+    const payload: Record<string, unknown> = {
+      text: this.formatContent(message),
+    };
 
     const channel = this.getParam(parsed.params.channel);
     const username = this.getParam(parsed.params.username);
@@ -62,22 +74,30 @@ export class SlackWebhookProvider extends BaseProvider {
     try {
       const response = await fetch(webhookUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'User-Agent': 'fire-signal/0.1.0' },
+        headers: {
+          'Content-Type': 'application/json',
+          'User-Agent': 'fire-signal/0.1.0',
+        },
         body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
         const text = await response.text().catch(() => '');
-        return this.failure(new Error(`Slack API error ${response.status}: ${text}`), {
-          status: response.status,
-          text,
-        });
+        return this.failure(
+          new Error(`Slack API error ${response.status}: ${text}`),
+          {
+            status: response.status,
+            text,
+          }
+        );
       }
 
       const text = await response.text();
       return this.success({ response: text });
     } catch (error) {
-      return this.failure(error instanceof Error ? error : new Error(String(error)));
+      return this.failure(
+        error instanceof Error ? error : new Error(String(error))
+      );
     }
   }
 

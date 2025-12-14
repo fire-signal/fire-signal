@@ -19,7 +19,10 @@ export interface TaggedUrl {
  * @param filterTags - Tags to filter by (optional)
  * @returns Filtered array of URL strings
  */
-export function filterByTags(entries: TaggedUrl[], filterTags?: string[]): string[] {
+export function filterByTags(
+  entries: TaggedUrl[],
+  filterTags?: string[]
+): string[] {
   if (!filterTags || filterTags.length === 0) {
     return entries.map((e) => e.url);
   }

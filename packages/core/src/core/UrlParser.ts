@@ -83,7 +83,10 @@ export function parseFSUrl(raw: string): FSParsedUrl {
 
   // For custom schemas, convert to a parseable format
   // Replace custom schema with https for URL parsing
-  const normalizedUrl = trimmed.replace(/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//, 'https://');
+  const normalizedUrl = trimmed.replace(
+    /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//,
+    'https://'
+  );
 
   let parsed: URL | null = null;
   let hostname: string | undefined;
@@ -91,14 +94,14 @@ export function parseFSUrl(raw: string): FSParsedUrl {
   let username: string | undefined;
   let password: string | undefined;
   let pathWithoutSlash: string = '';
-  let params: Record<string, string | string[]> = {};
+  const params: Record<string, string | string[]> = {};
 
   try {
     parsed = new URL(normalizedUrl);
   } catch {
     // Fallback: manual parsing for URLs with numeric hostnames (e.g., Discord webhooks)
     // Pattern: schema://[user:pass@]host[:port][/path][?query]
-    const afterSchema = trimmed.slice(schemaMatch[0]!.length);
+    const afterSchema = trimmed.slice(schemaMatch[0].length);
 
     // Split by ? to get path and query
     const [pathPart, queryPart] = afterSchema.split('?');
@@ -180,8 +183,12 @@ export function parseFSUrl(raw: string): FSParsedUrl {
 
     pathWithoutSlash = parsed.pathname.slice(1);
     hostname = parsed.hostname || undefined;
-    username = parsed.username ? decodeURIComponent(parsed.username) : undefined;
-    password = parsed.password ? decodeURIComponent(parsed.password) : undefined;
+    username = parsed.username
+      ? decodeURIComponent(parsed.username)
+      : undefined;
+    password = parsed.password
+      ? decodeURIComponent(parsed.password)
+      : undefined;
 
     if (parsed.port) {
       const parsedPort = parseInt(parsed.port, 10);

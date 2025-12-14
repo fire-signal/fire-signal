@@ -47,7 +47,10 @@ const DEFAULT_RETRY_OPTIONS: Required<Omit<RetryOptions, 'onRetry'>> = {
  * @param options - Retry options
  * @returns Result of the function
  */
-export async function withRetry<T>(fn: () => Promise<T>, options: RetryOptions = {}): Promise<T> {
+export async function withRetry<T>(
+  fn: () => Promise<T>,
+  options: RetryOptions = {}
+): Promise<T> {
   const opts = { ...DEFAULT_RETRY_OPTIONS, ...options };
   let lastError: Error | undefined;
   let delay = opts.initialDelay;
@@ -69,7 +72,7 @@ export async function withRetry<T>(fn: () => Promise<T>, options: RetryOptions =
     }
   }
 
-  throw lastError;
+  throw lastError ?? new Error('Max retry attempts exceeded');
 }
 
 /**

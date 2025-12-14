@@ -40,7 +40,10 @@ export const DEFAULT_CONFIG_PATHS = [
  * @param filePath - Path to the file (for error messages)
  * @returns Array of config entries
  */
-function parseConfigContent(content: string, filePath: string): FSConfigEntry[] {
+function parseConfigContent(
+  content: string,
+  filePath: string
+): FSConfigEntry[] {
   const entries: FSConfigEntry[] = [];
 
   try {
@@ -94,7 +97,9 @@ function parseConfigContent(content: string, filePath: string): FSConfigEntry[] 
  * @param paths - Additional paths to check
  * @returns Loaded configuration
  */
-export async function loadFSConfig(paths: string[] = []): Promise<FSLoadedConfig> {
+export async function loadFSConfig(
+  paths: string[] = []
+): Promise<FSLoadedConfig> {
   const entries: FSConfigEntry[] = [];
   const allPaths = [...paths, ...DEFAULT_CONFIG_PATHS];
 
@@ -105,7 +110,11 @@ export async function loadFSConfig(paths: string[] = []): Promise<FSLoadedConfig
       entries.push(...parsed);
     } catch (error) {
       // Ignore file not found errors
-      if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
+      if (
+        error instanceof Error &&
+        'code' in error &&
+        error.code === 'ENOENT'
+      ) {
         continue;
       }
       // Re-throw parse errors
@@ -125,7 +134,10 @@ export async function loadFSConfig(paths: string[] = []): Promise<FSLoadedConfig
  * @param filePath - Path to write to
  * @param entries - Entries to write
  */
-export async function writeFSConfig(filePath: string, entries: FSConfigEntry[]): Promise<void> {
+export async function writeFSConfig(
+  filePath: string,
+  entries: FSConfigEntry[]
+): Promise<void> {
   const config = {
     urls: entries.map((e) => ({
       url: e.url,

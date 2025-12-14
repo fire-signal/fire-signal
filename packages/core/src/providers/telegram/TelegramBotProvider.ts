@@ -1,4 +1,9 @@
-import { BaseProvider, FSProviderContext, FSProviderResult, FSParsedUrl } from '../base/Provider';
+import {
+  BaseProvider,
+  FSProviderContext,
+  FSProviderResult,
+  FSParsedUrl,
+} from '../base/Provider';
 import type { FSMessage } from '../../core/Message';
 
 /**
@@ -31,13 +36,18 @@ export class TelegramBotProvider extends BaseProvider {
     };
   }
 
-  async send(message: FSMessage, ctx: FSProviderContext): Promise<FSProviderResult> {
+  async send(
+    message: FSMessage,
+    ctx: FSProviderContext
+  ): Promise<FSProviderResult> {
     const { parsed } = ctx;
     const botToken = parsed.hostname;
     const chatId = parsed.segments[0];
 
     if (!botToken || !chatId) {
-      return this.failure(new Error('Invalid Telegram URL. Expected: tgram://botToken/chatId'));
+      return this.failure(
+        new Error('Invalid Telegram URL. Expected: tgram://botToken/chatId')
+      );
     }
 
     const apiUrl = `https://api.telegram.org/bot${botToken}/sendMessage`;
@@ -47,8 +57,12 @@ export class TelegramBotProvider extends BaseProvider {
     };
 
     const parseMode = this.getParam(parsed.params.parse_mode);
-    const disablePreview = this.getParam(parsed.params.disable_web_page_preview);
-    const disableNotification = this.getParam(parsed.params.disable_notification);
+    const disablePreview = this.getParam(
+      parsed.params.disable_web_page_preview
+    );
+    const disableNotification = this.getParam(
+      parsed.params.disable_notification
+    );
 
     if (parseMode) payload.parse_mode = parseMode;
     if (disablePreview === 'true') payload.disable_web_page_preview = true;
@@ -57,7 +71,10 @@ export class TelegramBotProvider extends BaseProvider {
     try {
       const response = await fetch(apiUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'User-Agent': 'fire-signal/0.1.0' },
+        headers: {
+          'Content-Type': 'application/json',
+          'User-Agent': 'fire-signal/0.1.0',
+        },
         body: JSON.stringify(payload),
       });
 
@@ -72,7 +89,9 @@ export class TelegramBotProvider extends BaseProvider {
 
       return this.success(responseData);
     } catch (error) {
-      return this.failure(error instanceof Error ? error : new Error(String(error)));
+      return this.failure(
+        error instanceof Error ? error : new Error(String(error))
+      );
     }
   }
 

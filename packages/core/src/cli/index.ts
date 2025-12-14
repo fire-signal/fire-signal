@@ -24,16 +24,22 @@ program
   .version('0.1.0')
   .option('-t, --title <title>', 'Notification title/subject')
   .option('-b, --body <body>', 'Notification body; if absent, reads from stdin')
-  .option('-g, --tag <tags...>', 'Tags to filter URLs (comma or space separated)')
+  .option(
+    '-g, --tag <tags...>',
+    'Tags to filter URLs (comma or space separated)'
+  )
   .option('-c, --config <paths...>', 'Additional config file paths')
   .option('-v, --verbose', 'Enable verbose logging')
   .option('-q, --quiet', 'Suppress output except errors')
   .argument('[urls...]', 'Notification URLs to send to')
-  .action(async (urls: string[], options) => {
+  .action(async (urls: string[], options: CLIOptions) => {
     try {
       await runSend(urls, options);
     } catch (error) {
-      console.error('Error:', error instanceof Error ? error.message : String(error));
+      console.error(
+        'Error:',
+        error instanceof Error ? error.message : String(error)
+      );
       process.exit(1);
     }
   });
@@ -49,7 +55,9 @@ interface CLIOptions {
 
 async function runSend(urls: string[], options: CLIOptions): Promise<void> {
   // Create logger based on options
-  const logger = options.quiet ? () => {} : createConsoleLogger(options.verbose ? 'debug' : 'info');
+  const logger = options.quiet
+    ? () => {}
+    : createConsoleLogger(options.verbose ? 'debug' : 'info');
 
   // Read body from stdin if not provided
   const body = await readStdinIfEmpty(options.body);
@@ -78,7 +86,9 @@ async function runSend(urls: string[], options: CLIOptions): Promise<void> {
 
   if (allUrls.length === 0) {
     console.error('Error: No notification URLs provided.');
-    console.error('Provide URLs as arguments, via FIRE_SIGNAL_URLS env, or in config files.');
+    console.error(
+      'Provide URLs as arguments, via FIRE_SIGNAL_URLS env, or in config files.'
+    );
     process.exit(1);
   }
 
@@ -112,6 +122,9 @@ async function runSend(urls: string[], options: CLIOptions): Promise<void> {
 
 // Parse and execute
 program.parseAsync(process.argv).catch((error) => {
-  console.error('Error:', error instanceof Error ? error.message : String(error));
+  console.error(
+    'Error:',
+    error instanceof Error ? error.message : String(error)
+  );
   process.exit(1);
 });

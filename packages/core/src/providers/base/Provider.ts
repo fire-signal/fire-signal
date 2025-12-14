@@ -65,7 +65,10 @@ export abstract class BaseProvider implements FSProvider {
   abstract readonly schemas: string[];
 
   abstract parseUrl(raw: string): FSParsedUrl;
-  abstract send(message: FSMessage, ctx: FSProviderContext): Promise<FSProviderResult>;
+  abstract send(
+    message: FSMessage,
+    ctx: FSProviderContext
+  ): Promise<FSProviderResult>;
 
   /** Creates a success result. */
   protected success(raw?: unknown): FSProviderResult {
@@ -90,7 +93,9 @@ export abstract class BaseProvider implements FSProvider {
   }
 
   /** Parses a query string into a params object. */
-  protected parseQueryParams(queryString: string): Record<string, string | string[]> {
+  protected parseQueryParams(
+    queryString: string
+  ): Record<string, string | string[]> {
     const params: Record<string, string | string[]> = {};
     if (!queryString) return params;
 

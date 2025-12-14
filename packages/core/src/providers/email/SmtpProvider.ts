@@ -1,6 +1,11 @@
 import nodemailer from 'nodemailer';
-import type { Transporter } from 'nodemailer';
-import { BaseProvider, FSProviderContext, FSProviderResult, FSParsedUrl } from '../base/Provider';
+import type { Transporter, SentMessageInfo } from 'nodemailer';
+import {
+  BaseProvider,
+  FSProviderContext,
+  FSProviderResult,
+  FSParsedUrl,
+} from '../base/Provider';
 import type { FSMessage } from '../../core/Message';
 
 /**
@@ -68,12 +73,17 @@ export class SmtpProvider extends BaseProvider {
     };
   }
 
-  async send(message: FSMessage, ctx: FSProviderContext): Promise<FSProviderResult> {
+  async send(
+    message: FSMessage,
+    ctx: FSProviderContext
+  ): Promise<FSProviderResult> {
     const { parsed } = ctx;
 
     if (!parsed.hostname) {
       return this.failure(
-        new Error('Invalid mailto URL. Expected: mailto://user:pass@smtp.example.com')
+        new Error(
+          'Invalid mailto URL. Expected: mailto://user:pass@smtp.example.com'
+        )
       );
     }
 
@@ -97,7 +107,9 @@ export class SmtpProvider extends BaseProvider {
     });
 
     const from =
-      this.getParam(parsed.params.from) ?? parsed.username ?? 'noreply@fire-signal.local';
+      this.getParam(parsed.params.from) ??
+      parsed.username ??
+      'noreply@fire-signal.local';
     const cc = this.getParam(parsed.params.cc);
     const bcc = this.getParam(parsed.params.bcc);
 
@@ -112,14 +124,20 @@ export class SmtpProvider extends BaseProvider {
     };
 
     try {
-      const info = await transporter.sendMail(mailOptions);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      const info: SentMessageInfo = await transporter.sendMail(mailOptions);
       return this.success({
-        messageId: info.messageId,
-        accepted: info.accepted,
-        rejected: info.rejected,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        messageId: String(info.messageId ?? ''),
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        accepted: info.accepted as string[] | undefined,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        rejected: info.rejected as string[] | undefined,
       });
     } catch (error) {
-      return this.failure(error instanceof Error ? error : new Error(String(error)));
+      return this.failure(
+        error instanceof Error ? error : new Error(String(error))
+      );
     }
   }
 

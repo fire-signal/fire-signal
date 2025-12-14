@@ -1,4 +1,9 @@
-import { BaseProvider, FSProviderContext, FSProviderResult, FSParsedUrl } from '../base/Provider';
+import {
+  BaseProvider,
+  FSProviderContext,
+  FSProviderResult,
+  FSParsedUrl,
+} from '../base/Provider';
 import type { FSMessage } from '../../core/Message';
 
 /**
@@ -46,12 +51,17 @@ export class RocketChatWebhookProvider extends BaseProvider {
     };
   }
 
-  async send(message: FSMessage, ctx: FSProviderContext): Promise<FSProviderResult> {
+  async send(
+    message: FSMessage,
+    ctx: FSProviderContext
+  ): Promise<FSProviderResult> {
     const { parsed } = ctx;
 
     if (!parsed.hostname) {
       return this.failure(
-        new Error('Invalid Rocket.Chat URL. Expected: rocketchat://hostname/webhookToken')
+        new Error(
+          'Invalid Rocket.Chat URL. Expected: rocketchat://hostname/webhookToken'
+        )
       );
     }
 
@@ -59,7 +69,9 @@ export class RocketChatWebhookProvider extends BaseProvider {
     const path = parsed.path || '';
     const webhookUrl = `https://${parsed.hostname}${port}/hooks/${path}`;
 
-    const payload: Record<string, unknown> = { text: this.formatContent(message) };
+    const payload: Record<string, unknown> = {
+      text: this.formatContent(message),
+    };
 
     const channel = this.getParam(parsed.params.channel);
     const alias = this.getParam(parsed.params.alias);
@@ -74,22 +86,30 @@ export class RocketChatWebhookProvider extends BaseProvider {
     try {
       const response = await fetch(webhookUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'User-Agent': 'fire-signal/0.1.0' },
+        headers: {
+          'Content-Type': 'application/json',
+          'User-Agent': 'fire-signal/0.1.0',
+        },
         body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
         const text = await response.text().catch(() => '');
-        return this.failure(new Error(`Rocket.Chat API error ${response.status}: ${text}`), {
-          status: response.status,
-          text,
-        });
+        return this.failure(
+          new Error(`Rocket.Chat API error ${response.status}: ${text}`),
+          {
+            status: response.status,
+            text,
+          }
+        );
       }
 
       const responseData = await response.json().catch(() => ({}));
       return this.success(responseData);
     } catch (error) {
-      return this.failure(error instanceof Error ? error : new Error(String(error)));
+      return this.failure(
+        error instanceof Error ? error : new Error(String(error))
+      );
     }
   }
 

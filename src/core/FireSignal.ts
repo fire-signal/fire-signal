@@ -31,6 +31,33 @@ export interface FireSignalOptions {
 export interface SendOptions {
   /** Tags to filter URLs. Only URLs with matching tags will receive the notification. */
   tags?: string[];
+  /**
+   * Parameters to replace placeholders in URLs.
+   * Placeholders use {name} format and will be replaced with the corresponding value.
+   * @example
+   * ```typescript
+   * fire.add('mailto://...?to={email}', ['user']);
+   * await fire.send(msg, { params: { email: 'user@example.com' } });
+   * ```
+   */
+  params?: Record<string, string>;
+}
+
+/**
+ * Replaces placeholders in a URL with values from params.
+ * Placeholders are in {name} format.
+ */
+function replacePlaceholders(
+  url: string,
+  params: Record<string, string> = {}
+): string {
+  return url.replace(/\{([^}]+)\}/g, (_, key: string) => {
+    const value = params[key];
+    if (value === undefined) {
+      throw new Error(`Missing param '${key}' for URL placeholder`);
+    }
+    return encodeURIComponent(value);
+  });
 }
 
 /**
@@ -177,7 +204,18 @@ export class FireSignal {
     this.logger(`Sending to ${urls.length} URL(s)`, 'info');
 
     for (const rawUrl of urls) {
-      const schema = this.extractSchema(rawUrl);
+      // Replace placeholders in URL with params
+      let processedUrl: string;
+      try {
+        processedUrl = replacePlaceholders(rawUrl, options.params);
+      } catch (error) {
+        const err = error instanceof Error ? error : new Error(String(error));
+        results.push({ success: false, providerId: 'unknown', error: err });
+        this.logger(`URL placeholder error: ${err.message}`, 'error');
+        continue;
+      }
+
+      const schema = this.extractSchema(processedUrl);
       const provider = this.providers.get(schema);
 
       if (!provider) {
@@ -191,11 +229,11 @@ export class FireSignal {
       }
 
       try {
-        const parsed = provider.parseUrl(rawUrl);
+        const parsed = provider.parseUrl(processedUrl);
         this.logger(`Sending via ${provider.id}...`, 'debug');
 
         const result = await provider.send(message, {
-          url: rawUrl,
+          url: processedUrl,
           parsed,
           tags: options.tags,
         });

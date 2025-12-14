@@ -9,12 +9,12 @@
 </p>
 
 <p align="center">
-  Stop juggling SDKs. Fire-Signal broadcasts your notifications to Discord, Slack, Telegram, Email, and more — simultaneously.
+  Stop juggling SDKs. Fire-Signal broadcasts your notifications to Discord, Rocket.Chat, Slack, Telegram, Email, and more — simultaneously.
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/@fire-signal/core"><img src="https://img.shields.io/npm/v/@fire-signal/core?style=for-the-badge&color=ff6b35&label=npm" alt="npm" /></a>
-  <a href="https://www.npmjs.com/package/@fire-signal/core"><img src="https://img.shields.io/npm/dm/@fire-signal/core?style=for-the-badge&color=0d96f2&label=downloads" alt="downloads" /></a>
+  <a href="https://www.npmjs.com/package/fire-signal"><img src="https://img.shields.io/npm/v/fire-signal?style=for-the-badge&color=ff6b35&label=npm" alt="npm" /></a>
+  <a href="https://www.npmjs.com/package/fire-signal"><img src="https://img.shields.io/npm/dm/fire-signal?style=for-the-badge&color=0d96f2&label=downloads" alt="downloads" /></a>
   <img src="https://img.shields.io/badge/TypeScript-Ready-3178c6?style=for-the-badge&logo=typescript&logoColor=white" alt="typescript" />
   <a href="https://github.com/fire-signal/fire-signal/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-22c55e?style=for-the-badge" alt="license" /></a>
 </p>
@@ -32,9 +32,12 @@ You're building an app and need to notify your team when:
 - A user signs up
 - An error occurs in production
 
-Some team members prefer **Discord**. Others use **Slack**. Your ops team needs **email**. And you want real-time alerts on **Telegram**.
+Some team members prefer **Discord**. Others use **Rocket.Chat**. Some like
+**Slack**. Your ops team needs **email**. And you want real-time alerts on
+**Telegram**.
 
-**Without Fire-Signal:** You maintain 4+ different integrations, each with their own API, error handling, and configuration.
+**Without Fire-Signal:** You maintain 4+ different integrations, each with their
+own API, error handling, and configuration.
 
 **With Fire-Signal:** One line of code. All channels. Done.
 
@@ -43,12 +46,13 @@ Some team members prefer **Discord**. Others use **Slack**. Your ops team needs 
 ## ⚡ Quick Example
 
 ```typescript
-import { FireSignal } from '@fire-signal/core';
+import { FireSignal } from 'fire-signal';
 
 const fire = new FireSignal({
   urls: [
-    'discord://1234567890/abcdefghijk',
-    'tgram://123456789:AABBccDD/987654321',
+    'discord://webhookId/webhookToken',
+    'tgram://botToken/chatId',
+    'rocketchat://chat.company.com/webhookToken',
     'slack://T00000/B00000/XXXXXX',
     'mailto://user:pass@smtp.gmail.com?to=team@company.com',
   ],
@@ -66,18 +70,219 @@ await fire.send({
 ## 📦 Installation
 
 ```bash
-npm install @fire-signal/core
+npm install fire-signal
 ```
 
 <details>
 <summary>Other package managers</summary>
 
 ```bash
-pnpm add @fire-signal/core
-yarn add @fire-signal/core
+pnpm add fire-signal
+yarn add fire-signal
 ```
 
 </details>
+
+---
+
+## 🎯 Use Cases
+
+### Welcome Email for New Users
+
+```typescript
+import { FireSignal } from 'fire-signal';
+
+// Configure once with placeholder
+const fire = new FireSignal();
+fire.add('mailto://noreply%40myapp.com:password@smtp.myapp.com?to={email}', [
+  'user',
+]);
+
+async function onUserSignup(user: User) {
+  await fire.send(
+    {
+      title: 'Welcome to MyApp!',
+      body: `Hi ${user.name}, thanks for signing up.`,
+    },
+    { tags: ['user'], params: { email: user.email } }
+  );
+}
+```
+
+### Multi-Team Notification System
+
+Configure different channels for different teams using **tags** and
+**placeholders**:
+
+```typescript
+import { FireSignal } from 'fire-signal';
+
+// Single instance, multiple audiences
+const fire = new FireSignal();
+
+// Fixed channels (no placeholders)
+fire.add('discord://sales-webhook/token', ['sales']);
+fire.add('slack://T.../B.../XXX', ['sales', 'management']);
+fire.add('tgram://bot/dev-chat', ['dev']);
+fire.add('rocketchat://chat.company.com/webhook', ['dev', 'ops']);
+
+// Dynamic channel (with placeholder)
+fire.add('mailto://alerts%40company.com:pass@smtp.company.com?to={email}', [
+  'email',
+]);
+
+// New sale? Notify sales team (fixed)
+await fire.send(
+  { title: '💰 New Sale', body: 'Order #1234 - $599.00' },
+  { tags: ['sales'] }
+);
+
+// Deploy complete? Notify dev team (fixed)
+await fire.send(
+  { title: '🚀 Deployed', body: 'v2.1.0 is live on production' },
+  { tags: ['dev'] }
+);
+
+// Email specific user (dynamic)
+await fire.send(
+  { title: '🎫 Ticket Update', body: 'Your ticket has been resolved.' },
+  { tags: ['email'], params: { email: 'customer@example.com' } }
+);
+```
+
+### E-commerce Order Flow
+
+```typescript
+import { FireSignal } from 'fire-signal';
+
+const fire = new FireSignal();
+
+// Internal channels (fixed)
+fire.add('rocketchat://chat.company.com/webhookToken', ['warehouse']);
+fire.add('discord://finance-webhook/token', ['finance']);
+fire.add('tgram://bot/support-chat', ['support']);
+
+// Customer emails (dynamic placeholder)
+fire.add(
+  'mailto://orders%40store.com:pass@smtp.store.com?to={customer_email}',
+  ['customer']
+);
+
+// Order placed
+async function onOrderCreated(order: Order, customer: Customer) {
+  // Email customer (uses placeholder)
+  await fire.send(
+    {
+      title: 'Order Confirmed',
+      body: `Order #${order.id} - Total: $${order.total}`,
+    },
+    { tags: ['customer'], params: { customer_email: customer.email } }
+  );
+
+  // Notify warehouse (fixed channel)
+  await fire.send(
+    {
+      title: '📦 New Order',
+      body: `#${order.id} - ${order.items.length} items`,
+    },
+    { tags: ['warehouse'] }
+  );
+}
+
+// Payment received
+async function onPaymentReceived(payment: Payment) {
+  await fire.send(
+    {
+      title: '💳 Payment',
+      body: `$${payment.amount} for order #${payment.orderId}`,
+    },
+    { tags: ['finance'] }
+  );
+}
+```
+
+### CI/CD Pipeline Notifications
+
+```typescript
+import { FireSignal } from 'fire-signal';
+
+const fire = new FireSignal();
+
+fire.add('discord://devops-webhook/token', ['build']);
+fire.add('tgram://bot/releases-channel', ['release']);
+fire.add(
+  'mailto://team%40company.com:pass@smtp.gmail.com?to=devs@company.com',
+  ['release']
+);
+
+// Build stages
+await fire.send(
+  { title: '🔨 Build Started', body: `Branch: ${branch}` },
+  { tags: ['build'] }
+);
+await fire.send(
+  { title: '✅ Tests Passed', body: '47 tests, 0 failures' },
+  { tags: ['build'] }
+);
+await fire.send(
+  { title: '🚀 Released', body: `v${version} deployed to production` },
+  { tags: ['release'] }
+);
+```
+
+### SaaS Application Events
+
+```typescript
+import { FireSignal } from 'fire-signal';
+
+// Configure once at app startup
+const notifications = new FireSignal();
+
+// User notifications (transactional emails)
+notifications.add(
+  'mailto://noreply%40saas.com:pass@smtp.saas.com?to={{user_email}}',
+  ['user']
+);
+
+// Internal team notifications
+notifications.add('rocketchat://chat.internal.com/webhook', ['engineering']);
+notifications.add('discord://sales-webhook/token', ['sales']);
+notifications.add('slack://T.../B.../support', ['support']);
+
+// Usage throughout the app:
+
+// User signed up
+await notifications.send(
+  { title: 'Welcome!', body: 'Your 14-day trial has started.' },
+  { tags: ['user'] }
+);
+await notifications.send(
+  { title: '👤 New Signup', body: `${user.email} from ${user.company}` },
+  { tags: ['sales'] }
+);
+
+// User upgraded to paid
+await notifications.send(
+  { title: 'Thank you!', body: 'Your subscription is now active.' },
+  { tags: ['user'] }
+);
+await notifications.send(
+  { title: '🎉 New Customer', body: `${user.company} - $${plan.price}/mo` },
+  { tags: ['sales'] }
+);
+
+// User requested support
+await notifications.send(
+  { title: '🎫 Support Ticket', body: `${ticket.subject} from ${user.email}` },
+  { tags: ['support'] }
+);
+
+// Error in production
+await notifications.send(
+  { title: '🐛 Error', body: `${error.message}\n${error.stack}` },
+  { tags: ['engineering'] }
+);
+```
 
 ---
 
@@ -88,60 +293,82 @@ yarn add @fire-signal/core
 ```typescript
 // notifications.service.ts
 import { Injectable, OnModuleInit } from '@nestjs/common';
-import { FireSignal } from '@fire-signal/core';
+import { FireSignal } from 'fire-signal';
 
 @Injectable()
 export class NotificationsService implements OnModuleInit {
   private fire: FireSignal;
 
   onModuleInit() {
-    this.fire = new FireSignal({
-      urls: [process.env.DISCORD_WEBHOOK, process.env.TELEGRAM_BOT_URL],
-    });
+    this.fire = new FireSignal();
+
+    // User notifications
+    this.fire.add(process.env.SMTP_URL, ['user']);
+
+    // Team notifications
+    this.fire.add(process.env.DISCORD_WEBHOOK, ['team']);
+    this.fire.add(process.env.SLACK_WEBHOOK, ['team', 'sales']);
+    this.fire.add(process.env.TELEGRAM_BOT_URL, ['critical']);
+  }
+
+  async notifyUser(email: string, title: string, body: string) {
+    await this.fire.send({ title, body }, { tags: ['user'] });
   }
 
   async notifyTeam(title: string, body: string) {
-    await this.fire.send({ title, body });
+    await this.fire.send({ title, body }, { tags: ['team'] });
   }
 
   async alertCritical(message: string) {
-    await this.fire.send({ title: '🚨 CRITICAL', body: message }, { tags: ['oncall'] });
+    await this.fire.send(
+      { title: '🚨 CRITICAL', body: message },
+      { tags: ['critical'] }
+    );
   }
 }
-```
-
-```typescript
-// notifications.module.ts
-@Module({
-  providers: [NotificationsService],
-  exports: [NotificationsService],
-})
-export class NotificationsModule {}
 ```
 
 ### Next.js (App Router)
 
 ```typescript
-// lib/fire-signal.ts
-import { FireSignal } from '@fire-signal/core';
+// lib/notifications.ts
+import { FireSignal } from 'fire-signal';
 
-export const fire = new FireSignal({
-  urls: [process.env.DISCORD_WEBHOOK!, process.env.SLACK_WEBHOOK!],
-});
+export const notifications = new FireSignal();
+
+// Configure channels
+notifications.add(process.env.DISCORD_WEBHOOK!, ['internal']);
+notifications.add(process.env.ROCKET_CHAT_WEBHOOK!, ['internal', 'sales']);
+notifications.add(process.env.SMTP_URL!, ['user']);
 ```
 
 ```typescript
 // app/api/webhooks/stripe/route.ts
-import { fire } from '@/lib/fire-signal';
+import { notifications } from '@/lib/notifications';
 
 export async function POST(req: Request) {
   const event = await req.json();
 
   if (event.type === 'payment_intent.succeeded') {
-    await fire.send({
-      title: '💰 Payment Received',
-      body: `$${event.data.object.amount / 100} from ${event.data.object.customer}`,
-    });
+    // Notify sales team
+    await notifications.send(
+      {
+        title: '💰 Payment Received',
+        body: `$${event.data.object.amount / 100} from ${event.data.object.customer}`,
+      },
+      { tags: ['sales'] }
+    );
+  }
+
+  if (event.type === 'payment_intent.failed') {
+    // Alert on all internal channels
+    await notifications.send(
+      {
+        title: '❌ Payment Failed',
+        body: `Customer: ${event.data.object.customer}`,
+      },
+      { tags: ['internal'] }
+    );
   }
 
   return Response.json({ received: true });
@@ -152,11 +379,13 @@ export async function POST(req: Request) {
 
 ```typescript
 // lib/notifications.ts
-import { FireSignal } from '@fire-signal/core';
+import { FireSignal } from 'fire-signal';
 
-export const fire = new FireSignal({
-  urls: process.env.FIRE_SIGNAL_URLS?.split(',') || [],
-});
+export const fire = new FireSignal();
+
+fire.add(process.env.DISCORD_WEBHOOK, ['dev']);
+fire.add(process.env.SLACK_WEBHOOK, ['business']);
+fire.add(process.env.SMTP_URL, ['user']);
 ```
 
 ```typescript
@@ -166,72 +395,30 @@ import { fire } from '../lib/notifications';
 router.post('/signup', async (req, res) => {
   const user = await createUser(req.body);
 
-  await fire.send({
-    title: '👤 New User',
-    body: `${user.name} (${user.email}) just signed up!`,
-  });
+  // Welcome email to user
+  await fire.send(
+    { title: 'Welcome!', body: `Hi ${user.name}, your account is ready.` },
+    { tags: ['user'] }
+  );
+
+  // Notify business team
+  await fire.send(
+    { title: '👤 New User', body: `${user.name} (${user.email})` },
+    { tags: ['business'] }
+  );
 
   res.json(user);
-});
-```
-
-### Fastify
-
-```typescript
-// plugins/fire-signal.ts
-import fp from 'fastify-plugin';
-import { FireSignal } from '@fire-signal/core';
-
-export default fp(async (fastify) => {
-  const fire = new FireSignal({
-    urls: [fastify.config.DISCORD_WEBHOOK],
-  });
-
-  fastify.decorate('fire', fire);
-});
-```
-
-```typescript
-// routes/orders.ts
-fastify.post('/orders', async (request, reply) => {
-  const order = await createOrder(request.body);
-
-  await fastify.fire.send({
-    title: '🛒 New Order',
-    body: `Order #${order.id} - $${order.total}`,
-  });
-
-  return order;
 });
 ```
 
 ### Node.js Scripts / CI/CD
 
 ```bash
-# In your CI pipeline
-npm install -g @fire-signal/core
-
 # After deploy
-fire-signal -t "✅ Deploy Complete" -b "Deployed to production" \
-  discord://webhook/token \
-  tgram://bot/chat
-```
+fire-signal -t "✅ Deploy Complete" -b "v2.0.0 deployed" discord://webhook/token
 
-```typescript
-// scripts/backup.ts
-import { FireSignal } from '@fire-signal/core';
-
-const fire = new FireSignal({ urls: [process.env.ALERTS_WEBHOOK!] });
-
-async function runBackup() {
-  try {
-    await performBackup();
-    await fire.send({ title: '✅ Backup Complete', body: `Size: ${size}MB` });
-  } catch (error) {
-    await fire.send({ title: '❌ Backup Failed', body: error.message });
-    process.exit(1);
-  }
-}
+# Filter by tags from config
+fire-signal -t "🚨 Alert" -b "Check logs" -g critical
 ```
 
 ---
@@ -242,7 +429,7 @@ async function runBackup() {
 | ------------------------------ | ---------------------------------------------------------- |
 | 📡 **Multi-channel broadcast** | Discord, Slack, Telegram, Email, Rocket.Chat, and webhooks |
 | 🔗 **URL-based config**        | No complex setup — just `discord://webhook/token`          |
-| 🏷️ **Tag-based routing**       | Send critical alerts only to on-call channels              |
+| 🏷️ **Tag-based routing**       | Send to specific audiences with tags                       |
 | 💻 **CLI included**            | Integrate into shell scripts and CI/CD                     |
 | 📁 **Config file support**     | Centralize channels in `~/.fire-signal.yml`                |
 | ⚡ **TypeScript native**       | Full type safety and autocomplete                          |
@@ -257,9 +444,9 @@ async function runBackup() {
 | ----------- | --------------------------- |
 | Discord     | `discord://`                |
 | Telegram    | `tgram://` `telegram://`    |
+| Rocket.Chat | `rocketchat://` `rocket://` |
 | Slack       | `slack://`                  |
 | Email       | `mailto://` `mailtos://`    |
-| Rocket.Chat | `rocketchat://` `rocket://` |
 | Webhook     | `json://` `jsons://`        |
 
 ---
@@ -291,6 +478,15 @@ tgram://botToken/chatId?parse_mode=Markdown
 </details>
 
 <details>
+<summary><strong>Rocket.Chat</strong></summary>
+
+```
+rocketchat://chat.example.com/webhookToken?channel=#general
+```
+
+</details>
+
+<details>
 <summary><strong>Slack</strong></summary>
 
 ```
@@ -309,16 +505,10 @@ mailto://user:pass@smtp.gmail.com?to=team@company.com
 mailtos://user:pass@smtp.gmail.com:465?to=team@company.com
 ```
 
-For Gmail, use an App Password (not your regular password)
+**Note:** Encode `@` in username as `%40`
 
-</details>
-
-<details>
-<summary><strong>Rocket.Chat</strong></summary>
-
-```
-rocketchat://chat.example.com/webhookToken?channel=#general
-```
+Example:
+`mailto://alerts%40company.com:password@smtp.gmail.com?to=team@company.com`
 
 </details>
 
@@ -342,13 +532,20 @@ Create `~/.fire-signal.yml`:
 
 ```yaml
 urls:
-  - url: 'discord://webhookId/webhookToken'
-    tags: ['team', 'deploys']
+  # Sales team
+  - url: 'discord://sales-webhook/token'
+    tags: ['sales']
+  - url: 'slack://T.../B.../XXX'
+    tags: ['sales', 'management']
 
-  - url: 'tgram://botToken/chatId'
-    tags: ['critical', 'oncall']
+  # Dev team
+  - url: 'tgram://bot/dev-chat'
+    tags: ['dev']
+  - url: 'rocketchat://chat.company.com/webhook'
+    tags: ['dev', 'ops']
 
-  - url: 'mailto://user:pass@smtp.gmail.com?to=ops@company.com'
+  # Critical alerts (everyone)
+  - url: 'mailto://alerts%40company.com:pass@smtp.gmail.com?to=oncall@company.com'
     tags: ['critical']
 ```
 
@@ -356,10 +553,13 @@ urls:
 const fire = new FireSignal();
 await fire.loadConfig();
 
-// Only team channels
-await fire.send({ body: 'Build passed' }, { tags: ['team'] });
+// Only sales team
+await fire.send({ body: 'New lead!' }, { tags: ['sales'] });
 
-// Only critical (Telegram + Email)
+// Only dev team
+await fire.send({ body: 'Build passed' }, { tags: ['dev'] });
+
+// Critical (email)
 await fire.send({ body: 'Server down!' }, { tags: ['critical'] });
 ```
 
@@ -395,7 +595,7 @@ Examples:
 
 ```bash
 # Direct
-fire-signal -t "Deploy" -b "Done!" discord://id/token
+fire-signal -t "Deploy" -b "Done" discord://id/token
 
 # From env
 export FIRE_SIGNAL_URLS="discord://id/token tgram://bot/chat"
@@ -404,8 +604,8 @@ fire-signal -t "Alert" -b "Check logs"
 # Pipe
 echo "Build completed" | fire-signal -t "CI"
 
-# Tags
-fire-signal -t "Critical" -b "Error!" -g oncall
+# Tags (from config)
+fire-signal -t "Critical" -b "Error" -g critical
 ```
 
 ---
@@ -413,7 +613,7 @@ fire-signal -t "Critical" -b "Error!" -g oncall
 ## 🔧 Custom Providers
 
 ```typescript
-import { BaseProvider } from '@fire-signal/core';
+import { BaseProvider } from 'fire-signal';
 
 class PagerDutyProvider extends BaseProvider {
   readonly id = 'pagerduty';
@@ -471,7 +671,8 @@ interface FSMessage {
 
 ## 🤝 Contributing
 
-Contributions welcome! Please open an issue first to discuss what you'd like to change.
+Contributions welcome! Please open an issue first to discuss what you'd like to
+change.
 
 ---
 

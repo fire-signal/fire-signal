@@ -2,9 +2,28 @@
  * Simple logger utility for fire-signal.
  */
 
-export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
+/**
+ * Available log levels.
+ * - silent: No output
+ * - error: Only errors
+ * - warn: Errors and warnings
+ * - info: Errors, warnings, and info
+ * - debug: All output including debug
+ */
+export type LogLevel = 'silent' | 'error' | 'warn' | 'info' | 'debug';
 
 export type LoggerFn = (message: string, level?: LogLevel) => void;
+
+/**
+ * Log level priority (higher = more severe/important).
+ */
+export const LOG_LEVELS: Record<LogLevel, number> = {
+  silent: -1,
+  debug: 0,
+  info: 1,
+  warn: 2,
+  error: 3,
+};
 
 /**
  * Creates a console logger.
@@ -13,15 +32,13 @@ export type LoggerFn = (message: string, level?: LogLevel) => void;
  * @returns A logger function
  */
 export function createConsoleLogger(minLevel: LogLevel = 'info'): LoggerFn {
-  const levels: Record<LogLevel, number> = {
-    debug: 0,
-    info: 1,
-    warn: 2,
-    error: 3,
-  };
+  if (minLevel === 'silent') {
+    return silentLogger;
+  }
 
   return (message: string, level: LogLevel = 'info') => {
-    if (levels[level] >= levels[minLevel]) {
+    if (level === 'silent') return;
+    if (LOG_LEVELS[level] >= LOG_LEVELS[minLevel]) {
       const prefix = `[fire-signal] [${level.toUpperCase()}]`;
       switch (level) {
         case 'debug':

@@ -33,22 +33,39 @@ export interface FSMessage {
 
 /**
  * Represents an attachment to be sent with a notification.
+ *
+ * @example
+ * ```typescript
+ * // Using URL
+ * { url: 'https://example.com/file.pdf', name: 'report.pdf' }
+ *
+ * // Using Buffer content
+ * { content: fs.readFileSync('./file.pdf'), name: 'report.pdf' }
+ *
+ * // Using base64 string
+ * { content: 'base64string...', name: 'image.png', contentType: 'image/png' }
+ * ```
  */
 export interface FSAttachment {
   /**
-   * URL to the attachment. Can be:
-   * - http(s):// for remote files
-   * - file:// for local files
+   * URL to the attachment (http, https, or file://).
+   * Either url or content must be provided.
    */
-  url: string;
+  url?: string;
 
   /**
-   * Optional display name for the attachment.
+   * File content as Buffer or base64 string.
+   * Either url or content must be provided.
+   */
+  content?: Buffer | string;
+
+  /**
+   * Display name for the attachment (required for content, optional for url).
    */
   name?: string;
 
   /**
-   * Optional MIME type of the attachment.
+   * MIME type of the attachment (e.g., 'application/pdf', 'image/png').
    */
   contentType?: string;
 }

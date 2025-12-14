@@ -66,14 +66,54 @@ export class DiscordWebhookProvider extends BaseProvider {
     if (tts === 'true') payload.tts = true;
 
     try {
-      const response = await fetch(webhookUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'User-Agent': 'fire-signal/0.1.0',
-        },
-        body: JSON.stringify(payload),
-      });
+      let response: Response;
+
+      // Check if we have attachments
+      if (message.attachments && message.attachments.length > 0) {
+        // Use multipart form-data for attachments
+        const formData = new FormData();
+        formData.append('payload_json', JSON.stringify(payload));
+
+        for (let i = 0; i < message.attachments.length; i++) {
+          const att = message.attachments[i];
+          if (!att) continue;
+
+          let blob: Blob;
+
+          if (att.content) {
+            // Content provided directly
+            const buffer =
+              typeof att.content === 'string'
+                ? Buffer.from(att.content, 'base64')
+                : att.content;
+            blob = new Blob([buffer], { type: att.contentType });
+          } else if (att.url) {
+            // Fetch from URL
+            const fetchRes = await fetch(att.url);
+            blob = await fetchRes.blob();
+          } else {
+            continue;
+          }
+
+          formData.append(`files[${i}]`, blob, att.name ?? `file${i}`);
+        }
+
+        response = await fetch(webhookUrl, {
+          method: 'POST',
+          headers: { 'User-Agent': 'fire-signal/0.1.0' },
+          body: formData,
+        });
+      } else {
+        // No attachments, use JSON
+        response = await fetch(webhookUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'User-Agent': 'fire-signal/0.1.0',
+          },
+          body: JSON.stringify(payload),
+        });
+      }
 
       if (!response.ok) {
         const text = await response.text().catch(() => '');

@@ -113,7 +113,21 @@ export class SmtpProvider extends BaseProvider {
     const cc = this.getParam(parsed.params.cc);
     const bcc = this.getParam(parsed.params.bcc);
 
-    const mailOptions = {
+    const mailOptions: {
+      from: string;
+      to: string;
+      cc?: string;
+      bcc?: string;
+      subject: string;
+      text: string;
+      html: string;
+      attachments?: Array<{
+        filename?: string;
+        content?: Buffer | string;
+        path?: string;
+        contentType?: string;
+      }>;
+    } = {
       from,
       to,
       cc,
@@ -122,6 +136,26 @@ export class SmtpProvider extends BaseProvider {
       text: message.body,
       html: this.formatHtml(message),
     };
+
+    // Add attachments if present
+    if (message.attachments && message.attachments.length > 0) {
+      mailOptions.attachments = message.attachments.map((att) => {
+        if (att.content) {
+          return {
+            filename: att.name,
+            content: att.content,
+            contentType: att.contentType,
+          };
+        } else if (att.url) {
+          return {
+            filename: att.name ?? att.url.split('/').pop(),
+            path: att.url,
+            contentType: att.contentType,
+          };
+        }
+        return { filename: att.name };
+      });
+    }
 
     try {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment

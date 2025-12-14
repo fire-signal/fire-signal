@@ -490,6 +490,65 @@ fire-signal -t "🚨 Alert" -b "Check logs" -g critical
 
 ---
 
+## 📎 Attachments
+
+Send files with your notifications (supported by Email, Discord, and Telegram):
+
+```typescript
+import { readFileSync } from 'fs';
+import { FireSignal } from 'fire-signal';
+
+const fire = new FireSignal({
+  urls: [
+    'mailto://user:pass@smtp.gmail.com?to=team@company.com',
+    'discord://webhookId/webhookToken',
+    'tgram://botToken/chatId',
+  ],
+});
+
+// Attach a file from URL
+await fire.send({
+  title: 'Monthly Report',
+  body: 'Please find the attached report.',
+  attachments: [{ url: 'https://example.com/report.pdf', name: 'report.pdf' }],
+});
+
+// Attach a local file (Buffer)
+await fire.send({
+  title: 'Invoice',
+  body: 'Your invoice is attached.',
+  attachments: [
+    {
+      content: readFileSync('./invoice.pdf'),
+      name: 'invoice.pdf',
+      contentType: 'application/pdf',
+    },
+  ],
+});
+
+// Multiple attachments
+await fire.send({
+  title: 'Project Files',
+  body: 'Here are the files.',
+  attachments: [
+    { content: readFileSync('./doc.pdf'), name: 'doc.pdf' },
+    { url: 'https://example.com/image.png', name: 'image.png' },
+  ],
+});
+```
+
+**Attachment Support by Provider:**
+
+| Provider        | Attachments | Notes                               |
+| --------------- | ----------- | ----------------------------------- |
+| **Email**       | ✅ Full     | Via nodemailer (any file type)      |
+| **Discord**     | ✅ Full     | Via multipart form-data             |
+| **Telegram**    | ✅ Full     | Via sendDocument API                |
+| **Slack**       | ❌ Limited  | Webhook doesn't support file upload |
+| **Rocket.Chat** | ❌ Limited  | Webhook doesn't support file upload |
+
+---
+
 ## ✨ Features
 
 | Feature                        | Description                                                |
@@ -497,6 +556,7 @@ fire-signal -t "🚨 Alert" -b "Check logs" -g critical
 | 📡 **Multi-channel broadcast** | Discord, Slack, Telegram, Email, Rocket.Chat, and webhooks |
 | 🔗 **URL-based config**        | No complex setup — just `discord://webhook/token`          |
 | 🏷️ **Tag-based routing**       | Send to specific audiences with tags                       |
+| 📎 **Attachments**             | Send files via Email, Discord, and Telegram                |
 | 💻 **CLI included**            | Integrate into shell scripts and CI/CD                     |
 | 📁 **Config file support**     | Centralize channels in `~/.fire-signal.yml`                |
 | ⚡ **TypeScript native**       | Full type safety and autocomplete                          |

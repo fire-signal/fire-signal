@@ -284,6 +284,73 @@ await notifications.send(
 );
 ```
 
+### Rich HTML Emails with Templates
+
+For professional emails with images and styling, use template engines like
+**Handlebars** or **MJML**:
+
+```typescript
+// templates/order-confirmation.ts
+export const orderTemplate = `
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    .container { max-width: 600px; margin: 0 auto; font-family: Arial; }
+    .header { background: #4F46E5; color: white; padding: 20px; text-align: center; }
+    .button { background: #4F46E5; color: white; padding: 12px 24px; 
+              text-decoration: none; border-radius: 4px; display: inline-block; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <img src="https://mycompany.com/logo.png" alt="Logo" width="150" />
+    </div>
+    <div style="padding: 20px;">
+      <h1>Olá {{name}}!</h1>
+      <p>Seu pedido <strong>#{{orderId}}</strong> foi confirmado.</p>
+      <p>Total: <strong>R$ {{total}}</strong></p>
+      <p style="text-align: center; margin-top: 20px;">
+        <a class="button" href="https://mycompany.com/pedido/{{orderId}}">Ver Pedido</a>
+      </p>
+    </div>
+  </div>
+</body>
+</html>
+`;
+```
+
+```typescript
+import Handlebars from 'handlebars';
+import { orderTemplate } from './templates/order-confirmation';
+import { FireSignal } from 'fire-signal';
+
+const fire = new FireSignal();
+fire.add('mailto://orders%40company.com:pass@smtp.gmail.com?to={email}', [
+  'customer',
+]);
+
+// Compile template with data
+const html = Handlebars.compile(orderTemplate)({
+  name: 'João Silva',
+  orderId: '12345',
+  total: '299,90',
+});
+
+// Send rich HTML email
+await fire.send(
+  { title: 'Pedido Confirmado', body: html },
+  { tags: ['customer'], params: { email: customer.email } }
+);
+```
+
+> **💡 Tip:** Images must use public URLs (`https://...`) or base64 data URLs.
+> Local file paths don't work in emails.
+
+> **💡 Tip:** For responsive emails, consider using [MJML](https://mjml.io/)
+> which compiles to email-safe HTML.
+
 ---
 
 ## 🏗️ Framework Integration

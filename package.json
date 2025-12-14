@@ -1,23 +1,86 @@
 {
-  "name": "fire-signal-monorepo",
-  "private": true,
-  "packageManager": "pnpm@9.0.0",
+  "name": "fire-signal",
+  "version": "0.1.0",
+  "description": "One call. Every channel. Zero hassle.",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "fire-signal": "bin/fire-signal.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "bin"
+  ],
   "scripts": {
-    "build": "pnpm -r build",
-    "test": "pnpm -r test",
-    "lint": "pnpm -r lint",
-    "format": "pnpm -r format",
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "dev:cli": "tsx src/cli/index.ts",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\"",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "typecheck": "tsc --noEmit",
     "prepare": "husky"
   },
+  "keywords": [
+    "notifications",
+    "discord",
+    "slack",
+    "telegram",
+    "email",
+    "webhook",
+    "rocketchat",
+    "fire-signal"
+  ],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fire-signal/fire-signal.git"
+  },
+  "homepage": "https://github.com/fire-signal/fire-signal#readme",
+  "bugs": {
+    "url": "https://github.com/fire-signal/fire-signal/issues"
+  },
   "lint-staged": {
-    "packages/**/*.ts": [
+    "src/**/*.ts": [
       "prettier --write"
     ]
+  },
+  "dependencies": {
+    "commander": "^12.1.0",
+    "nodemailer": "^6.9.16",
+    "yaml": "^2.6.1"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.2.0",
     "@commitlint/config-conventional": "^20.2.0",
+    "@types/node": "^22.10.2",
+    "@types/nodemailer": "^6.4.17",
+    "@typescript-eslint/eslint-plugin": "^8.18.0",
+    "@typescript-eslint/parser": "^8.18.0",
+    "eslint": "^9.16.0",
+    "eslint-config-prettier": "^9.1.0",
     "husky": "^9.1.7",
-    "lint-staged": "^16.2.7"
+    "lint-staged": "^16.2.7",
+    "prettier": "^3.4.2",
+    "tsup": "^8.3.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.50.0",
+    "vitest": "^2.1.8"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

@@ -5,6 +5,7 @@ import {
   FSParsedUrl,
 } from '../base/Provider';
 import type { FSMessage } from '../../core/Message';
+import { getHttpErrorDescription } from '../../utils/http-errors';
 
 /**
  * Discord Webhook Provider.
@@ -117,13 +118,16 @@ export class DiscordWebhookProvider extends BaseProvider {
 
       if (!response.ok) {
         const text = await response.text().catch(() => '');
-        return this.failure(
-          new Error(`Discord API error ${response.status}: ${text}`),
-          {
-            status: response.status,
-            text,
-          }
+        const errorDetails = text.trim() || response.statusText || '';
+        const errorDesc = getHttpErrorDescription(
+          response.status,
+          errorDetails
         );
+        return this.failure(new Error(`Discord: ${errorDesc}`), {
+          status: response.status,
+          statusText: response.statusText,
+          text,
+        });
       }
 
       return this.success({ status: response.status });

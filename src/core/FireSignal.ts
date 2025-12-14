@@ -362,9 +362,14 @@ export class FireSignal {
       );
 
       if (safeTags.length > 0) {
+        // Build descriptive fallback message
+        const originalTitle = context.message.title
+          ? `\n📨 Original: "${context.message.title}"`
+          : '';
+
         const fallbackMessage =
           messageFn?.(error, context) ??
-          `🚨 Notification failed: [${context.providerId}] ${error.message}`;
+          `🚨 Provider: ${context.providerId}\n❌ Error: ${error.message}${originalTitle}`;
 
         this.logger(
           `onError: Sending fallback to tags: ${safeTags.join(', ')}`,
@@ -374,7 +379,7 @@ export class FireSignal {
         try {
           // Use internal send without triggering another error handler
           const results = await this.sendInternal(
-            { title: 'Fire-Signal Error', body: fallbackMessage },
+            { title: '⚠️ Fire-Signal Error', body: fallbackMessage },
             { tags: safeTags }
           );
           this.logger(

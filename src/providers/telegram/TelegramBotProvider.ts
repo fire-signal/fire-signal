@@ -5,6 +5,7 @@ import {
   FSParsedUrl,
 } from '../base/Provider';
 import type { FSMessage } from '../../core/Message';
+import { getHttpErrorDescription } from '../../utils/http-errors';
 
 /**
  * Telegram Bot Provider.
@@ -117,10 +118,11 @@ export class TelegramBotProvider extends BaseProvider {
       const responseData = (await response.json()) as Record<string, unknown>;
 
       if (!response.ok || responseData.ok !== true) {
-        return this.failure(
-          new Error(`Telegram API error: ${JSON.stringify(responseData)}`),
-          responseData
+        const errorDesc = getHttpErrorDescription(
+          response.status,
+          JSON.stringify(responseData)
         );
+        return this.failure(new Error(`Telegram: ${errorDesc}`), responseData);
       }
 
       return this.success(responseData);

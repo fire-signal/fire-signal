@@ -5,6 +5,7 @@ import {
   FSParsedUrl,
 } from '../base/Provider';
 import type { FSMessage } from '../../core/Message';
+import { getHttpErrorDescription } from '../../utils/http-errors';
 
 /**
  * JSON Webhook Provider - Generic JSON POST webhook.
@@ -82,12 +83,16 @@ export class JsonWebhookProvider extends BaseProvider {
 
       if (!response.ok) {
         const text = await response.text().catch(() => '');
-        return this.failure(
-          new Error(
-            `HTTP ${response.status}: ${response.statusText} - ${text}`
-          ),
-          { status: response.status, text }
+        const errorDetails = text.trim() || response.statusText || '';
+        const errorDesc = getHttpErrorDescription(
+          response.status,
+          errorDetails
         );
+        return this.failure(new Error(`JSON Webhook: ${errorDesc}`), {
+          status: response.status,
+          statusText: response.statusText,
+          text,
+        });
       }
 
       const responseData = await response.json().catch(() => ({}));

@@ -13,7 +13,7 @@ import { FireSignal } from '../core/FireSignal';
 import { FSMessage } from '../core/Message';
 import { loadFSConfig } from '../config/ConfigLoader';
 import { loadUrlsFromEnv, loadConfigPathsFromEnv } from '../config/env';
-import { createConsoleLogger } from '../utils/logger';
+import { createConsoleLogger, LogLevel, silentLogger } from '../utils/logger';
 import { readStdinIfEmpty } from '../utils/stdin';
 
 const program = new Command();
@@ -29,8 +29,13 @@ program
     'Tags to filter URLs (comma or space separated)'
   )
   .option('-c, --config <paths...>', 'Additional config file paths')
-  .option('-v, --verbose', 'Enable verbose logging')
-  .option('-q, --quiet', 'Suppress output except errors')
+  .option(
+    '-l, --log-level <level>',
+    'Log level: silent, error, warn, info, debug',
+    'info'
+  )
+  .option('-v, --verbose', 'Enable verbose logging (same as --log-level debug)')
+  .option('-q, --quiet', 'Suppress output (same as --log-level silent)')
   .argument('[urls...]', 'Notification URLs to send to')
   .action(async (urls: string[], options: CLIOptions) => {
     try {
@@ -49,15 +54,25 @@ interface CLIOptions {
   body?: string;
   tag?: string[];
   config?: string[];
+  logLevel?: string;
   verbose?: boolean;
   quiet?: boolean;
 }
 
 async function runSend(urls: string[], options: CLIOptions): Promise<void> {
+  // Determine log level: quiet > verbose > logLevel
+  let logLevel: LogLevel = 'info';
+  if (options.quiet) {
+    logLevel = 'silent';
+  } else if (options.verbose) {
+    logLevel = 'debug';
+  } else if (options.logLevel) {
+    logLevel = options.logLevel as LogLevel;
+  }
+
   // Create logger based on options
-  const logger = options.quiet
-    ? () => {}
-    : createConsoleLogger(options.verbose ? 'debug' : 'info');
+  const logger =
+    logLevel === 'silent' ? silentLogger : createConsoleLogger(logLevel);
 
   // Read body from stdin if not provided
   const body = await readStdinIfEmpty(options.body);

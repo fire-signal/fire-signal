@@ -1,4 +1,5 @@
 import type { FSMessage } from '../../core/Message';
+import { getHttpErrorDescription } from '../../utils/http-errors';
 
 /**
  * Represents a parsed notification URL.
@@ -78,6 +79,29 @@ export abstract class BaseProvider implements FSProvider {
   /** Creates a failure result. */
   protected failure(error: Error, raw?: unknown): FSProviderResult {
     return { success: false, providerId: this.id, error, raw };
+  }
+
+  /**
+   * Creates an HTTP failure result with human-readable error description.
+   * Use this for API/webhook errors.
+   *
+   * @param providerName - Display name for the provider (e.g., "Discord", "Slack")
+   * @param response - The HTTP Response object
+   * @param responseText - Optional response body text
+   */
+  protected async httpFailure(
+    providerName: string,
+    response: Response,
+    responseText?: string
+  ): Promise<FSProviderResult> {
+    const text = responseText ?? (await response.text().catch(() => ''));
+    const errorDetails = text.trim() || response.statusText || '';
+    const errorDesc = getHttpErrorDescription(response.status, errorDetails);
+    return this.failure(new Error(`${providerName}: ${errorDesc}`), {
+      status: response.status,
+      statusText: response.statusText,
+      text,
+    });
   }
 
   /** Gets the first value from a param that may be an array. */

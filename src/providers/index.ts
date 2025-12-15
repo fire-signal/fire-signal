@@ -11,6 +11,7 @@ import { TelegramBotProvider } from './telegram/TelegramBotProvider';
 import { JsonWebhookProvider } from './http/JsonWebhookProvider';
 import { NtfyProvider } from './ntfy/NtfyProvider';
 import { GotifyProvider } from './gotify/GotifyProvider';
+import { GoogleChatProvider } from './gchat/GoogleChatProvider';
 
 // Export individual providers
 export { SmtpProvider } from './email/SmtpProvider';
@@ -21,6 +22,7 @@ export { TelegramBotProvider } from './telegram/TelegramBotProvider';
 export { JsonWebhookProvider } from './http/JsonWebhookProvider';
 export { NtfyProvider } from './ntfy/NtfyProvider';
 export { GotifyProvider } from './gotify/GotifyProvider';
+export { GoogleChatProvider } from './gchat/GoogleChatProvider';
 
 /**
  * Creates instances of all built-in providers.
@@ -37,6 +39,7 @@ export function createDefaultProviders(): FSProvider[] {
     new JsonWebhookProvider(),
     new NtfyProvider(),
     new GotifyProvider(),
+    new GoogleChatProvider(),
   ];
 }
 
@@ -58,4 +61,6 @@ export const PROVIDER_SCHEMAS = {
   ntfys: NtfyProvider,
   gotify: GotifyProvider,
   gotifys: GotifyProvider,
+  gchat: GoogleChatProvider,
+  googlechat: GoogleChatProvider,
 } as const;

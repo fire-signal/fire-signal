@@ -577,6 +577,7 @@ await fire.send({
 | Webhook     | `json://` `jsons://`        |
 | ntfy        | `ntfy://` `ntfys://`        |
 | Gotify      | `gotify://` `gotifys://`    |
+| Google Chat | `gchat://` `googlechat://`  |
 
 ---
 
@@ -737,6 +738,22 @@ gotifys://my-server.com/appToken   # HTTPS
 - `priority`: 1-10 (default 5)
 
 Create an Application in Gotify to get the token.
+
+</details>
+
+<details>
+<summary><strong>Google Chat</strong></summary>
+
+```
+gchat://SPACE_ID/KEY/TOKEN
+```
+
+Get your webhook URL from Google Chat:
+
+1. Open a space → Apps & Integrations → Webhooks → Create webhook
+2. Copy the URL:
+   `https://chat.googleapis.com/v1/spaces/SPACE/messages?key=KEY&token=TOKEN`
+3. Convert to: `gchat://SPACE/KEY/TOKEN`
 
 </details>
 

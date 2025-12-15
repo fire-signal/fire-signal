@@ -578,6 +578,7 @@ await fire.send({
 | ntfy        | `ntfy://` `ntfys://`        |
 | Gotify      | `gotify://` `gotifys://`    |
 | Google Chat | `gchat://` `googlechat://`  |
+| Mattermost  | `mmost://` `mmosts://`      |
 
 ---
 
@@ -754,6 +755,24 @@ Get your webhook URL from Google Chat:
 2. Copy the URL:
    `https://chat.googleapis.com/v1/spaces/SPACE/messages?key=KEY&token=TOKEN`
 3. Convert to: `gchat://SPACE/KEY/TOKEN`
+
+</details>
+
+<details>
+<summary><strong>Mattermost</strong></summary>
+
+```
+mmost://host/HOOK_ID
+mmosts://host/HOOK_ID    # HTTPS
+```
+
+**Query Parameters:**
+
+- `channel`: Override default channel (#general, @user)
+- `username`: Override webhook username
+- `icon_url`: Override webhook icon
+
+Get hook from: Integrations → Incoming Webhooks
 
 </details>
 

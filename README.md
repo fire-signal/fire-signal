@@ -1,9 +1,6 @@
 <p align="center">
-  <img src="https://em-content.zobj.net/source/apple/391/fire_1f525.png" alt="Fire-Signal" width="80" />
+  <img src="./assets/logo.png" alt="Fire-Signal" width="450" />
 </p>
-
-<h1 align="center">Fire-Signal</h1>
-
 <p align="center">
   <strong>One call. Every channel. Zero hassle.</strong>
 </p>

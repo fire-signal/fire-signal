@@ -9,6 +9,8 @@ import { RocketChatWebhookProvider } from './rocketchat/RocketChatWebhookProvide
 import { SlackWebhookProvider } from './slack/SlackWebhookProvider';
 import { TelegramBotProvider } from './telegram/TelegramBotProvider';
 import { JsonWebhookProvider } from './http/JsonWebhookProvider';
+import { NtfyProvider } from './ntfy/NtfyProvider';
+import { GotifyProvider } from './gotify/GotifyProvider';
 
 // Export individual providers
 export { SmtpProvider } from './email/SmtpProvider';
@@ -17,6 +19,8 @@ export { RocketChatWebhookProvider } from './rocketchat/RocketChatWebhookProvide
 export { SlackWebhookProvider } from './slack/SlackWebhookProvider';
 export { TelegramBotProvider } from './telegram/TelegramBotProvider';
 export { JsonWebhookProvider } from './http/JsonWebhookProvider';
+export { NtfyProvider } from './ntfy/NtfyProvider';
+export { GotifyProvider } from './gotify/GotifyProvider';
 
 /**
  * Creates instances of all built-in providers.
@@ -31,6 +35,8 @@ export function createDefaultProviders(): FSProvider[] {
     new SlackWebhookProvider(),
     new TelegramBotProvider(),
     new JsonWebhookProvider(),
+    new NtfyProvider(),
+    new GotifyProvider(),
   ];
 }
 
@@ -48,4 +54,8 @@ export const PROVIDER_SCHEMAS = {
   telegram: TelegramBotProvider,
   json: JsonWebhookProvider,
   jsons: JsonWebhookProvider,
+  ntfy: NtfyProvider,
+  ntfys: NtfyProvider,
+  gotify: GotifyProvider,
+  gotifys: GotifyProvider,
 } as const;

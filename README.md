@@ -575,6 +575,58 @@ await fire.send({
 | Slack       | `slack://`                  |
 | Email       | `mailto://` `mailtos://`    |
 | Webhook     | `json://` `jsons://`        |
+| ntfy        | `ntfy://` `ntfys://`        |
+| Gotify      | `gotify://` `gotifys://`    |
+
+---
+
+## 📋 Logging & Error Handling
+
+### Log Levels
+
+```typescript
+const fire = new FireSignal({
+  logLevel: 'info', // 'silent' | 'error' | 'warn' | 'info' | 'debug'
+});
+```
+
+**CLI:**
+
+```bash
+fire-signal --log-level debug -t "Test" -b "With debug output" "ntfy://..."
+fire-signal -v ...  # Same as --log-level debug
+fire-signal -q ...  # Same as --log-level silent
+```
+
+### Error Fallback (onError)
+
+Automatically notify a fallback channel when a provider fails:
+
+```typescript
+const fire = new FireSignal({
+  onError: {
+    fallbackTags: ['monitoring'], // Required: tags to send error to
+    // Optional: custom message format
+    // message: (error, ctx) => `Custom: ${error.message}`,
+    // Optional: external callback (e.g., Sentry)
+    // callback: async (error, ctx) => await sentry.captureException(error),
+  },
+});
+
+fire.add('rocketchat://main-server/webhook', ['main']);
+fire.add('tgram://bot/monitoring-chat', ['monitoring']);
+
+// If RocketChat fails, Telegram receives the error notification
+await fire.send({ title: 'Alert', body: 'Message' }, { tags: ['main'] });
+```
+
+**Error Messages:** Fire-Signal provides human-readable HTTP error messages:
+
+```
+[404] Not Found - Webhook URL is invalid or deleted
+[401] Unauthorized - Token expired or invalid credentials
+[504] Gateway Timeout - Server did not respond in time
+```
 
 ---
 
@@ -648,6 +700,43 @@ jsons://api.example.com/webhook   # HTTPS
 ```
 
 Sends JSON payload with `title`, `body`, `tags`, and `metadata`
+
+</details>
+
+<details>
+<summary><strong>ntfy</strong></summary>
+
+```
+ntfy://ntfy.sh/my-topic?priority=high&tags=fire
+ntfys://ntfy.sh/my-topic    # HTTPS
+ntfy://user:pass@my-server.com/topic   # With auth
+```
+
+**Query Parameters:**
+
+- `priority`: min, low, default, high, urgent
+- `tags`: Comma-separated emoji tags (e.g., warning,skull)
+- `click`: URL to open when clicked
+- `attach`: Attachment URL
+- `icon`: Notification icon URL
+- `email`: Email for notification
+- `delay`: Delay before sending (e.g., 30min, 2h)
+
+</details>
+
+<details>
+<summary><strong>Gotify</strong></summary>
+
+```
+gotify://my-server.com/appToken?priority=5
+gotifys://my-server.com/appToken   # HTTPS
+```
+
+**Query Parameters:**
+
+- `priority`: 1-10 (default 5)
+
+Create an Application in Gotify to get the token.
 
 </details>
 

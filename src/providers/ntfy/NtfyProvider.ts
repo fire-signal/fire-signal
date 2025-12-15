@@ -103,7 +103,13 @@ export class NtfyProvider extends BaseProvider {
 
     // Add title if present
     if (message.title) {
-      headers['Title'] = message.title;
+      const hasNonAscii = /[^\x00-\x7F]/.test(message.title);
+      if (hasNonAscii) {
+        headers['X-Title'] = Buffer.from(message.title).toString('base64');
+        headers['X-Encoding'] = 'base64';
+      } else {
+        headers['Title'] = message.title;
+      }
     }
 
     // Add optional headers from query params

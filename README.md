@@ -579,6 +579,7 @@ await fire.send({
 | Gotify      | `gotify://` `gotifys://`    |
 | Google Chat | `gchat://` `googlechat://`  |
 | Mattermost  | `mmost://` `mmosts://`      |
+| MS Teams    | `msteams://`                |
 
 ---
 
@@ -773,6 +774,21 @@ mmosts://host/HOOK_ID    # HTTPS
 - `icon_url`: Override webhook icon
 
 Get hook from: Integrations → Incoming Webhooks
+
+</details>
+
+<details>
+<summary><strong>MS Teams</strong></summary>
+
+```
+msteams://tenant.webhook.office.com/webhookb2/...
+```
+
+**Query Parameters:**
+
+- `theme_color`: Hex color for card accent (without #)
+
+Get webhook URL from: Channel settings → Connectors → Incoming Webhook
 
 </details>
 

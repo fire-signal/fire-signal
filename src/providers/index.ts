@@ -13,6 +13,7 @@ import { NtfyProvider } from './ntfy/NtfyProvider';
 import { GotifyProvider } from './gotify/GotifyProvider';
 import { GoogleChatProvider } from './gchat/GoogleChatProvider';
 import { MattermostProvider } from './mattermost/MattermostProvider';
+import { MSTeamsProvider } from './msteams/MSTeamsProvider';
 
 // Export individual providers
 export { SmtpProvider } from './email/SmtpProvider';
@@ -25,6 +26,7 @@ export { NtfyProvider } from './ntfy/NtfyProvider';
 export { GotifyProvider } from './gotify/GotifyProvider';
 export { GoogleChatProvider } from './gchat/GoogleChatProvider';
 export { MattermostProvider } from './mattermost/MattermostProvider';
+export { MSTeamsProvider } from './msteams/MSTeamsProvider';
 
 /**
  * Creates instances of all built-in providers.
@@ -43,6 +45,7 @@ export function createDefaultProviders(): FSProvider[] {
     new GotifyProvider(),
     new GoogleChatProvider(),
     new MattermostProvider(),
+    new MSTeamsProvider(),
   ];
 }
 
@@ -68,4 +71,5 @@ export const PROVIDER_SCHEMAS = {
   googlechat: GoogleChatProvider,
   mmost: MattermostProvider,
   mmosts: MattermostProvider,
+  msteams: MSTeamsProvider,
 } as const;

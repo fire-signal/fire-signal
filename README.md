@@ -577,6 +577,7 @@ await fire.send({
 | Google Chat | `gchat://` `googlechat://`  |
 | Mattermost  | `mmost://` `mmosts://`      |
 | MS Teams    | `msteams://`                |
+| OneSignal   | `onesignal://`              |
 
 ---
 
@@ -786,6 +787,34 @@ msteams://tenant.webhook.office.com/webhookb2/...
 - `theme_color`: Hex color for card accent (without #)
 
 Get webhook URL from: Channel settings → Connectors → Incoming Webhook
+
+</details>
+
+<details>
+<summary><strong>OneSignal</strong></summary>
+
+```
+onesignal://APP_ID@REST_API_KEY/
+onesignal://APP_ID@REST_API_KEY/{player_id}/
+onesignal://APP_ID@REST_API_KEY/#Subscribed%20Users/
+onesignal://APP_ID@REST_API_KEY/@{external_user_id}/
+onesignal://template_id:APP_ID@REST_API_KEY/
+```
+
+**Path Targets:**
+
+- `{player_id}` - Target by player ID
+- `#{segment}` - Target by segment (URL encode spaces)
+- `@{user_id}` - Target by external user ID
+- `{email}` - Target by email address
+
+**Query Parameters:**
+
+- `subtitle`: iOS subtitle
+- `language`: 2-char language code (default: en)
+- `image`: yes/no to include icon
+
+Get credentials from: OneSignal Dashboard → Settings → Keys & IDs
 
 </details>
 

@@ -14,6 +14,7 @@ import { GotifyProvider } from './gotify/GotifyProvider';
 import { GoogleChatProvider } from './gchat/GoogleChatProvider';
 import { MattermostProvider } from './mattermost/MattermostProvider';
 import { MSTeamsProvider } from './msteams/MSTeamsProvider';
+import { OneSignalProvider } from './onesignal/OneSignalProvider';
 
 // Export individual providers
 export { SmtpProvider } from './email/SmtpProvider';
@@ -27,6 +28,7 @@ export { GotifyProvider } from './gotify/GotifyProvider';
 export { GoogleChatProvider } from './gchat/GoogleChatProvider';
 export { MattermostProvider } from './mattermost/MattermostProvider';
 export { MSTeamsProvider } from './msteams/MSTeamsProvider';
+export { OneSignalProvider } from './onesignal/OneSignalProvider';
 
 /**
  * Creates instances of all built-in providers.
@@ -46,6 +48,7 @@ export function createDefaultProviders(): FSProvider[] {
     new GoogleChatProvider(),
     new MattermostProvider(),
     new MSTeamsProvider(),
+    new OneSignalProvider(),
   ];
 }
 
@@ -72,4 +75,5 @@ export const PROVIDER_SCHEMAS = {
   mmost: MattermostProvider,
   mmosts: MattermostProvider,
   msteams: MSTeamsProvider,
+  onesignal: OneSignalProvider,
 } as const;

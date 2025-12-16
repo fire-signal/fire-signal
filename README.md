@@ -582,6 +582,47 @@ await fire.send({
 
 ---
 
+## 🔧 Query Parameters
+
+Query parameters allow you to customize notification behavior per-provider. They
+can be used in two ways:
+
+### Static Values
+
+```typescript
+// Pushover with high priority and custom sound
+fire.add('pover://user@token/?priority=1&sound=cosmic');
+
+// ntfy with priority and tags
+fire.add('ntfy://ntfy.sh/alerts?priority=high&tags=warning,server');
+
+// Gotify with priority level
+fire.add('gotifys://gotify.example.com/token?priority=8');
+```
+
+### Dynamic Placeholders
+
+Use `{key}` placeholders that get replaced by values from `data`:
+
+```typescript
+fire.add('ntfy://ntfy.sh/alerts?tags={severity}');
+fire.add('pover://user@token/?sound={alert_sound}');
+
+fire.send({
+  title: 'Server Alert',
+  body: 'CPU usage exceeded 90%',
+  data: {
+    severity: 'urgent,server',
+    alert_sound: 'siren',
+  },
+});
+```
+
+Placeholders work in any part of the URL: path segments, query param values,
+etc.
+
+---
+
 ## 📋 Logging & Error Handling
 
 ### Log Levels

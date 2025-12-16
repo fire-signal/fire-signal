@@ -579,6 +579,7 @@ await fire.send({
 | MS Teams    | `msteams://`                |
 | OneSignal   | `onesignal://`              |
 | Pushover    | `pover://` `pushover://`    |
+| Twilio      | `twilio://`                 |
 
 ---
 
@@ -881,6 +882,26 @@ pover://USER_KEY@API_TOKEN/{device}/
 - `ttl`: Time to live in seconds
 
 Get credentials from: Pushover Dashboard
+
+</details>
+
+<details>
+<summary><strong>Twilio (SMS & WhatsApp)</strong></summary>
+
+```
+twilio://AccountSID:AuthToken@+1FromPhone/+1ToPhone
+twilio://AccountSID:AuthToken@+1FromPhone/+1Phone1/+1Phone2
+twilio://AccountSID:AuthToken@+1FromPhone/w:+1ToWhatsApp
+```
+
+**Path Targets:**
+
+- `/+1Phone` - SMS recipient (with country code)
+- `/w:+1Phone` - WhatsApp recipient (w: prefix)
+
+Multiple recipients supported via path segments.
+
+Get credentials from: Twilio Console → Account Info
 
 </details>
 

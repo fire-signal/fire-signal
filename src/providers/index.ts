@@ -16,6 +16,7 @@ import { MattermostProvider } from './mattermost/MattermostProvider';
 import { MSTeamsProvider } from './msteams/MSTeamsProvider';
 import { OneSignalProvider } from './onesignal/OneSignalProvider';
 import { PushoverProvider } from './pushover/PushoverProvider';
+import { TwilioProvider } from './twilio/TwilioProvider';
 
 // Export individual providers
 export { SmtpProvider } from './email/SmtpProvider';
@@ -31,6 +32,7 @@ export { MattermostProvider } from './mattermost/MattermostProvider';
 export { MSTeamsProvider } from './msteams/MSTeamsProvider';
 export { OneSignalProvider } from './onesignal/OneSignalProvider';
 export { PushoverProvider } from './pushover/PushoverProvider';
+export { TwilioProvider } from './twilio/TwilioProvider';
 
 /**
  * Creates instances of all built-in providers.
@@ -52,6 +54,7 @@ export function createDefaultProviders(): FSProvider[] {
     new MSTeamsProvider(),
     new OneSignalProvider(),
     new PushoverProvider(),
+    new TwilioProvider(),
   ];
 }
 
@@ -81,4 +84,5 @@ export const PROVIDER_SCHEMAS = {
   onesignal: OneSignalProvider,
   pover: PushoverProvider,
   pushover: PushoverProvider,
+  twilio: TwilioProvider,
 } as const;

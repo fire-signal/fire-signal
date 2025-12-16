@@ -1,10 +1,11 @@
 {
   "name": "fire-signal",
   "version": "0.1.0",
-  "description": "One call. Every channel. Zero hassle.",
+  "description": "One call. Every channel. Zero hassle. Send notifications to Discord, Rocket.Chat, Slack, Telegram, Email, WhatsApp, SMS and more.",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
+  "sideEffects": false,
   "bin": {
     "fire-signal": "bin/fire-signal.js"
   },
@@ -30,6 +31,7 @@
     "test": "vitest",
     "test:run": "vitest run",
     "typecheck": "tsc --noEmit",
+    "prepublishOnly": "pnpm run build",
     "prepare": "husky"
   },
   "keywords": [
@@ -40,9 +42,21 @@
     "email",
     "webhook",
     "rocketchat",
+    "ntfy",
+    "gotify",
+    "pushover",
+    "onesignal",
+    "twilio",
+    "sms",
+    "whatsapp",
+    "mattermost",
+    "teams",
+    "google-chat",
+    "push-notifications",
+    "multi-channel",
     "fire-signal"
   ],
-  "author": "",
+  "author": "Fire-Signal Contributors",
   "license": "MIT",
   "repository": {
     "type": "git",

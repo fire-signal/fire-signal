@@ -578,6 +578,7 @@ await fire.send({
 | Mattermost  | `mmost://` `mmosts://`      |
 | MS Teams    | `msteams://`                |
 | OneSignal   | `onesignal://`              |
+| Pushover    | `pover://` `pushover://`    |
 
 ---
 
@@ -815,6 +816,30 @@ onesignal://template_id:APP_ID@REST_API_KEY/
 - `image`: yes/no to include icon
 
 Get credentials from: OneSignal Dashboard → Settings → Keys & IDs
+
+</details>
+
+<details>
+<summary><strong>Pushover</strong></summary>
+
+```
+pover://USER_KEY@API_TOKEN/
+pover://USER_KEY@API_TOKEN/{device}/
+```
+
+**Path Targets:**
+
+- `{device}` - Target specific device(s)
+
+**Query Parameters:**
+
+- `priority`: -2 (lowest) to 2 (emergency)
+- `sound`: Notification sound
+- `url`: Supplementary URL
+- `html`: yes/no for HTML formatting
+- `ttl`: Time to live in seconds
+
+Get credentials from: Pushover Dashboard
 
 </details>
 

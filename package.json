@@ -72,7 +72,7 @@
     ]
   },
   "dependencies": {
-    "commander": "^12.1.0",
+    "commander": "^14.0.2",
     "nodemailer": "^6.9.16",
     "yaml": "^2.6.1"
   },

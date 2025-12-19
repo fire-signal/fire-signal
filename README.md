@@ -10,8 +10,10 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/fire-signal/fire-signal/actions"><img src="https://img.shields.io/github/actions/workflow/status/fire-signal/fire-signal/ci.yml?style=for-the-badge&label=CI" alt="CI" /></a>
   <a href="https://www.npmjs.com/package/fire-signal"><img src="https://img.shields.io/npm/v/fire-signal?style=for-the-badge&color=ff6b35&label=npm" alt="npm" /></a>
   <a href="https://www.npmjs.com/package/fire-signal"><img src="https://img.shields.io/npm/dm/fire-signal?style=for-the-badge&color=0d96f2&label=downloads" alt="downloads" /></a>
+  <img src="https://img.shields.io/badge/Node-20%2B-339933?style=for-the-badge&logo=node.js&logoColor=white" alt="node" />
   <img src="https://img.shields.io/badge/TypeScript-Ready-3178c6?style=for-the-badge&logo=typescript&logoColor=white" alt="typescript" />
   <a href="https://github.com/fire-signal/fire-signal/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-22c55e?style=for-the-badge" alt="license" /></a>
 </p>

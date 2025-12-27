@@ -42,6 +42,12 @@ export interface FSProviderResult {
   providerId: string;
   raw?: unknown;
   error?: Error;
+  /** Number of attempts made (1 = no retries, >1 = retried). */
+  attempts?: number;
+  /** Total duration including retries in milliseconds. */
+  durationMs?: number;
+  /** Whether this result came after retrying. */
+  retried?: boolean;
 }
 
 /**

@@ -5,7 +5,20 @@ export {
   FSParseError,
   FSConfigError,
   FSProviderNotFoundError,
+  FSValidationError,
+  FSCredentialsError,
+  FSNetworkError,
 } from './core/errors';
+export {
+  validateFSUrl,
+  validateAndParseFSUrl,
+  isValidUrl,
+} from './core/UrlValidator';
+export type {
+  ValidationResult,
+  ValidationError,
+  ValidationWarning,
+} from './core/UrlValidator';
 
 export type { FireSignalOptions, SendOptions } from './core/FireSignal';
 export type { FSMessage, FSAttachment } from './core/Message';

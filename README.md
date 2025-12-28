@@ -84,6 +84,22 @@ yarn add fire-signal
 
 ---
 
+## ✨ Features
+
+| Feature                        | Description                                                |
+| ------------------------------ | ---------------------------------------------------------- |
+| 📡 **Multi-channel broadcast** | Discord, Slack, Telegram, Email, Rocket.Chat, and webhooks |
+| 🔗 **URL-based config**        | No complex setup — just `discord://webhook/token`          |
+| 🏷️ **Tag-based routing**       | Send to specific audiences with tags                       |
+| 📎 **Attachments**             | Send files via Email, Discord, and Telegram                |
+| 💻 **CLI included**            | Integrate into shell scripts and CI/CD                     |
+| 📁 **Config file support**     | Centralize channels in `~/.fire-signal.yml`                |
+| ⚡ **TypeScript native**       | Full type safety and autocomplete                          |
+| 🔧 **Extensible**              | Create custom providers in minutes                         |
+| 🪶 **Lightweight**             | Minimal dependencies                                       |
+
+---
+
 ## 🎯 Use Cases
 
 ### Welcome Email for New Users
@@ -202,88 +218,144 @@ async function onPaymentReceived(payment: Payment) {
 
 ### CI/CD Pipeline Notifications
 
+Use the CLI directly in your pipelines:
+
+**GitHub Actions:**
+
+```yaml
+# .github/workflows/deploy.yml
+name: Deploy
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: ./deploy.sh
+
+      - name: Notify Success
+        if: success()
+        run: |
+          npx fire-signal \
+            -t "✅ Deploy Successful" \
+            -b "Commit: ${{ github.sha }}" \
+            "${{ secrets.DISCORD_WEBHOOK }}"
+
+      - name: Notify Failure
+        if: failure()
+        run: |
+          npx fire-signal \
+            -t "❌ Deploy Failed" \
+            -b "Check: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            "${{ secrets.DISCORD_WEBHOOK }}"
+```
+
+**GitLab CI:**
+
+```yaml
+# .gitlab-ci.yml
+deploy:
+  stage: deploy
+  script:
+    - ./deploy.sh
+  after_script:
+    - |
+      if [ "$CI_JOB_STATUS" = "success" ]; then
+        npx fire-signal -t "✅ Deploy OK" -b "Pipeline #$CI_PIPELINE_ID" "$DISCORD_WEBHOOK"
+      else
+        npx fire-signal -t "❌ Deploy Failed" -b "Check $CI_PIPELINE_URL" "$DISCORD_WEBHOOK"
+      fi
+```
+
+**Shell/Cron:**
+
+```bash
+npx fire-signal -t "🔄 Backup" -b "$(date)" "$NTFY_URL"
+```
+
+<details>
+<summary><strong>Advanced: Programmatic notifications in build scripts</strong></summary>
+
 ```typescript
 import { FireSignal } from 'fire-signal';
 
 const fire = new FireSignal();
-
 fire.add('discord://devops-webhook/token', ['build']);
 fire.add('tgram://bot/releases-channel', ['release']);
-fire.add(
-  'mailto://team%40company.com:pass@smtp.gmail.com?to=devs@company.com',
-  ['release']
-);
 
-// Build stages
 await fire.send(
-  { title: '🔨 Build Started', body: `Branch: ${branch}` },
+  { title: 'Build Started', body: `Branch: ${branch}` },
   { tags: ['build'] }
 );
 await fire.send(
-  { title: '✅ Tests Passed', body: '47 tests, 0 failures' },
-  { tags: ['build'] }
-);
-await fire.send(
-  { title: '🚀 Released', body: `v${version} deployed to production` },
+  { title: '🚀 Released', body: `v${version} deployed` },
   { tags: ['release'] }
 );
 ```
 
-### SaaS Application Events
+</details>
+
+<details>
+<summary><strong>SaaS Application Events</strong></summary>
 
 ```typescript
 import { FireSignal } from 'fire-signal';
 
 // Configure once at app startup
-const notifications = new FireSignal();
+const fire = new FireSignal();
 
 // User notifications (transactional emails)
-notifications.add(
-  'mailto://noreply%40saas.com:pass@smtp.saas.com?to={{user_email}}',
-  ['user']
-);
+fire.add('mailto://noreply%40saas.com:pass@smtp.saas.com?to={user_email}', [
+  'user',
+]);
 
 // Internal team notifications
-notifications.add('rocketchat://chat.internal.com/webhook', ['engineering']);
-notifications.add('discord://sales-webhook/token', ['sales']);
-notifications.add('slack://T.../B.../support', ['support']);
+fire.add('rocketchat://chat.internal.com/webhook', ['engineering']);
+fire.add('discord://sales-webhook/token', ['sales']);
+fire.add('slack://T.../B.../support', ['support']);
 
 // Usage throughout the app:
 
 // User signed up
-await notifications.send(
+await fire.send(
   { title: 'Welcome!', body: 'Your 14-day trial has started.' },
   { tags: ['user'] }
 );
-await notifications.send(
+await fire.send(
   { title: '👤 New Signup', body: `${user.email} from ${user.company}` },
   { tags: ['sales'] }
 );
 
 // User upgraded to paid
-await notifications.send(
+await fire.send(
   { title: 'Thank you!', body: 'Your subscription is now active.' },
   { tags: ['user'] }
 );
-await notifications.send(
+await fire.send(
   { title: '🎉 New Customer', body: `${user.company} - $${plan.price}/mo` },
   { tags: ['sales'] }
 );
 
 // User requested support
-await notifications.send(
+await fire.send(
   { title: '🎫 Support Ticket', body: `${ticket.subject} from ${user.email}` },
   { tags: ['support'] }
 );
 
 // Error in production
-await notifications.send(
+await fire.send(
   { title: '🐛 Error', body: `${error.message}\n${error.stack}` },
   { tags: ['engineering'] }
 );
 ```
 
-### Rich HTML Emails with Templates
+</details>
+
+<details>
+<summary><strong>Rich HTML Emails with Templates</strong></summary>
 
 For professional emails with images and styling, use template engines like
 **Handlebars** or **MJML**:
@@ -350,6 +422,8 @@ await fire.send(
 > **💡 Tip:** For responsive emails, consider using [MJML](https://mjml.io/)
 > which compiles to email-safe HTML.
 
+</details>
+
 ---
 
 ## 🏗️ Framework Integration
@@ -357,12 +431,12 @@ await fire.send(
 ### NestJS
 
 ```typescript
-// notifications.service.ts
+// fire.service.ts
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { FireSignal } from 'fire-signal';
 
 @Injectable()
-export class NotificationsService implements OnModuleInit {
+export class FireService implements OnModuleInit {
   private fire: FireSignal;
 
   onModuleInit() {
@@ -397,27 +471,27 @@ export class NotificationsService implements OnModuleInit {
 ### Next.js (App Router)
 
 ```typescript
-// lib/notifications.ts
+// lib/fire.ts
 import { FireSignal } from 'fire-signal';
 
-export const notifications = new FireSignal();
+export const fire = new FireSignal();
 
 // Configure channels
-notifications.add(process.env.DISCORD_WEBHOOK!, ['internal']);
-notifications.add(process.env.ROCKET_CHAT_WEBHOOK!, ['internal', 'sales']);
-notifications.add(process.env.SMTP_URL!, ['user']);
+fire.add(process.env.DISCORD_WEBHOOK!, ['internal']);
+fire.add(process.env.ROCKET_CHAT_WEBHOOK!, ['internal', 'sales']);
+fire.add(process.env.SMTP_URL!, ['user']);
 ```
 
 ```typescript
 // app/api/webhooks/stripe/route.ts
-import { notifications } from '@/lib/notifications';
+import { fire } from '@/lib/fire';
 
 export async function POST(req: Request) {
   const event = await req.json();
 
   if (event.type === 'payment_intent.succeeded') {
     // Notify sales team
-    await notifications.send(
+    await fire.send(
       {
         title: '💰 Payment Received',
         body: `$${event.data.object.amount / 100} from ${event.data.object.customer}`,
@@ -428,7 +502,7 @@ export async function POST(req: Request) {
 
   if (event.type === 'payment_intent.failed') {
     // Alert on all internal channels
-    await notifications.send(
+    await fire.send(
       {
         title: '❌ Payment Failed',
         body: `Customer: ${event.data.object.customer}`,
@@ -444,7 +518,7 @@ export async function POST(req: Request) {
 ### Express
 
 ```typescript
-// lib/notifications.ts
+// lib/fire.ts
 import { FireSignal } from 'fire-signal';
 
 export const fire = new FireSignal();
@@ -456,7 +530,7 @@ fire.add(process.env.SMTP_URL, ['user']);
 
 ```typescript
 // routes/users.ts
-import { fire } from '../lib/notifications';
+import { fire } from '../lib/fire';
 
 router.post('/signup', async (req, res) => {
   const user = await createUser(req.body);
@@ -536,52 +610,35 @@ await fire.send({
 });
 ```
 
-**Attachment Support by Provider:**
-
-| Provider        | Attachments | Notes                               |
-| --------------- | ----------- | ----------------------------------- |
-| **Email**       | ✅ Full     | Via nodemailer (any file type)      |
-| **Discord**     | ✅ Full     | Via multipart form-data             |
-| **Telegram**    | ✅ Full     | Via sendDocument API                |
-| **Slack**       | ❌ Limited  | Webhook doesn't support file upload |
-| **Rocket.Chat** | ❌ Limited  | Webhook doesn't support file upload |
+> **Note:** Attachments are supported by Email, Discord, and Telegram. Other
+> providers may support URL references only.
 
 ---
 
-## ✨ Features
+## 📡 Supported Providers
 
-| Feature                        | Description                                                |
-| ------------------------------ | ---------------------------------------------------------- |
-| 📡 **Multi-channel broadcast** | Discord, Slack, Telegram, Email, Rocket.Chat, and webhooks |
-| 🔗 **URL-based config**        | No complex setup — just `discord://webhook/token`          |
-| 🏷️ **Tag-based routing**       | Send to specific audiences with tags                       |
-| 📎 **Attachments**             | Send files via Email, Discord, and Telegram                |
-| 💻 **CLI included**            | Integrate into shell scripts and CI/CD                     |
-| 📁 **Config file support**     | Centralize channels in `~/.fire-signal.yml`                |
-| ⚡ **TypeScript native**       | Full type safety and autocomplete                          |
-| 🔧 **Extensible**              | Create custom providers in minutes                         |
-| 🪶 **Lightweight**             | Minimal dependencies                                       |
+| Provider        | Scheme                      | Auth         | Attachments | Formatting     | Limitations     | Example                          |
+| --------------- | --------------------------- | ------------ | ----------- | -------------- | --------------- | -------------------------------- |
+| **Discord**     | `discord://`                | Webhook URL  | ✅ Full     | Markdown       | 2000 char limit | `discord://webhookId/token`      |
+| **Telegram**    | `tgram://` `telegram://`    | Bot Token    | ✅ Full     | Markdown/HTML  | 4096 char limit | `tgram://botToken/chatId`        |
+| **Rocket.Chat** | `rocketchat://` `rocket://` | Webhook      | ❌          | Markdown       | -               | `rocketchat://host/token`        |
+| **Slack**       | `slack://`                  | Webhook      | ❌          | Markdown       | -               | `slack://T.../B.../XXX`          |
+| **Email**       | `mailto://` `mailtos://`    | SMTP         | ✅ Full     | HTML           | Encode @ as %40 | `mailto://user:pass@smtp...`     |
+| **Webhook**     | `json://` `jsons://`        | Optional     | ❌          | JSON           | -               | `json://api.example.com/hook`    |
+| **ntfy**        | `ntfy://` `ntfys://`        | Optional     | URL only    | Plain          | -               | `ntfy://ntfy.sh/topic`           |
+| **Gotify**      | `gotify://` `gotifys://`    | App Token    | ❌          | Markdown       | -               | `gotify://host/token`            |
+| **Google Chat** | `gchat://` `googlechat://`  | Webhook      | ❌          | Simple HTML    | -               | `gchat://SPACE/KEY/TOKEN`        |
+| **Mattermost**  | `mmost://` `mmosts://`      | Webhook      | ❌          | Markdown       | -               | `mmost://host/HOOK_ID`           |
+| **MS Teams**    | `msteams://`                | Webhook      | ❌          | Adaptive Cards | -               | `msteams://tenant.webhook...`    |
+| **OneSignal**   | `onesignal://`              | API Key      | ❌          | Plain          | -               | `onesignal://APP@KEY/`           |
+| **Pushover**    | `pover://` `pushover://`    | User+API Key | ❌          | HTML optional  | -               | `pover://USER@TOKEN/`            |
+| **Twilio**      | `twilio://`                 | Account SID  | ❌          | Plain (SMS)    | -               | `twilio://SID:Token@+1.../+1...` |
 
----
+**Legend:**
 
-## 📡 Supported Channels
-
-| Channel     | Schema                      |
-| ----------- | --------------------------- |
-| Discord     | `discord://`                |
-| Telegram    | `tgram://` `telegram://`    |
-| Rocket.Chat | `rocketchat://` `rocket://` |
-| Slack       | `slack://`                  |
-| Email       | `mailto://` `mailtos://`    |
-| Webhook     | `json://` `jsons://`        |
-| ntfy        | `ntfy://` `ntfys://`        |
-| Gotify      | `gotify://` `gotifys://`    |
-| Google Chat | `gchat://` `googlechat://`  |
-| Mattermost  | `mmost://` `mmosts://`      |
-| MS Teams    | `msteams://`                |
-| OneSignal   | `onesignal://`              |
-| Pushover    | `pover://` `pushover://`    |
-| Twilio      | `twilio://`                 |
+- ✅ Full = Supports file attachments (Buffer or URL)
+- ❌ = No attachment support via webhook
+- URL only = Attachments via URL reference only
 
 ---
 
@@ -673,6 +730,39 @@ await fire.send({ title: 'Alert', body: 'Message' }, { tags: ['main'] });
 [401] Unauthorized - Token expired or invalid credentials
 [504] Gateway Timeout - Server did not respond in time
 ```
+
+---
+
+## ⏱️ Timeouts & Retries
+
+<details>
+<summary><strong>CLI Options</strong></summary>
+
+```bash
+# Custom timeout (10 seconds instead of default 30s)
+fire-signal --timeout 10000 -t "Quick" -b "Message" ntfy://...
+
+# Retry on failures (3 retries with exponential backoff)
+fire-signal --retries 3 -t "Important" -b "Message" discord://...
+```
+
+</details>
+
+<details>
+<summary><strong>Understanding Exponential Backoff</strong></summary>
+
+With `--retries 3` and default settings:
+
+- 1st retry: waits 1 second
+- 2nd retry: waits 2 seconds
+- 3rd retry: waits 4 seconds
+
+Defaults: `timeout: 30s`, `retryDelay: 1s`, `backoffMultiplier: 2`,
+`maxDelay: 30s`
+
+Retryable HTTP codes: `429`, `500`, `502`, `503`, `504`
+
+</details>
 
 ---
 
@@ -969,9 +1059,15 @@ Options:
   -t, --title <title>      Notification title
   -b, --body <body>        Notification body (or pipe from stdin)
   -g, --tag <tags...>      Filter by tags
+  --tags <tags>            Alias for -g/--tag
   -c, --config <paths...>  Additional config paths
   -v, --verbose            Debug output
   -q, --quiet              Errors only
+  --dry-run                Show payload without sending
+  --json                   Output results as JSON
+  --timeout <ms>           Request timeout (default: 30000)
+  --retries <n>            Retry attempts (default: 0)
+  --validate               Validate URLs without sending
 ```
 
 Examples:
@@ -989,6 +1085,15 @@ echo "Build completed" | fire-signal -t "CI"
 
 # Tags (from config)
 fire-signal -t "Critical" -b "Error" -g critical
+
+# Dry run (preview without sending)
+fire-signal --dry-run -t "Test" -b "Body" ntfy://ntfy.sh/test
+
+# JSON output (for scripting)
+fire-signal --json -t "Deploy" -b "Done" ntfy://ntfy.sh/test | jq .
+
+# Validate URLs
+fire-signal --validate 'ntfy://ntfy.sh/test' 'discord://123/abc'
 ```
 
 ---
@@ -1034,19 +1139,33 @@ const fire = new FireSignal({
   urls?: string[];
   providers?: FSProvider[];
   skipDefaultProviders?: boolean;
+  logLevel?: 'silent' | 'error' | 'warn' | 'info' | 'debug';
+  logger?: (message: string, level: string) => void;
+  onError?: {
+    fallbackTags?: string[];
+    message?: (error: Error, context: FSErrorContext) => string;
+    callback?: (error: Error, context: FSErrorContext) => void;
+  };
 });
 
 fire.add(urls: string | string[], tags?: string[]);
 await fire.loadConfig();
-await fire.send(message: FSMessage, options?: { tags?: string[] });
+await fire.send(message: FSMessage, options?: { tags?: string[], params?: Record<string, string> });
 ```
 
 ```typescript
 interface FSMessage {
   title?: string;
   body: string;
-  tags?: string[];
-  metadata?: Record<string, unknown>;
+  attachments?: FSAttachment[];
+  data?: Record<string, unknown>;
+}
+
+interface FSAttachment {
+  name: string;
+  content?: Buffer;
+  url?: string;
+  contentType?: string;
 }
 ```
 

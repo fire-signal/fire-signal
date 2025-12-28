@@ -1,6 +1,6 @@
 {
   "name": "fire-signal",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "One call. Every channel. Zero hassle. Send notifications to Discord, Rocket.Chat, Slack, Telegram, Email, WhatsApp, SMS and more.",
   "main": "dist/index.js",
   "module": "dist/index.mjs",

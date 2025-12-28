@@ -24,7 +24,7 @@ const program = new Command();
 program
   .name('fire-signal')
   .description('Unified notification CLI for Node/TypeScript')
-  .version('0.1.0')
+  .version('0.2.0')
   .option('-t, --title <title>', 'Notification title/subject')
   .option('-b, --body <body>', 'Notification body; if absent, reads from stdin')
   .option(

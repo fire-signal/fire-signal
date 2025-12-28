@@ -1136,8 +1136,13 @@ const fire = new FireSignal({
 
 ```typescript
 const fire = new FireSignal({
+  // Destinations to send to (e.g. ['discord://webhook', 'slack://token'])
   urls?: string[];
+
+  // Custom logic (only if you created a custom provider class)
+  // Note: Built-in providers (Discord, Slack, etc.) are loaded automatically.
   providers?: FSProvider[];
+
   skipDefaultProviders?: boolean;
   logLevel?: 'silent' | 'error' | 'warn' | 'info' | 'debug';
   logger?: (message: string, level: string) => void;

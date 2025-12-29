@@ -20,12 +20,6 @@ export interface FSMessage {
   attachments?: FSAttachment[];
 
   /**
-   * Tags for filtering which URLs should receive this message.
-   * If specified, only URLs with matching tags will be used.
-   */
-  tags?: string[];
-
-  /**
    * Additional metadata that providers can use for custom behavior.
    */
   metadata?: Record<string, unknown>;

@@ -1155,7 +1155,7 @@ const fire = new FireSignal({
 
 fire.add(urls: string | string[], tags?: string[]);
 await fire.loadConfig();
-await fire.send(message: FSMessage, options?: { tags?: string[], params?: Record<string, string> });
+await fire.send(message: FSMessage, options?: SendOptions);
 ```
 
 ```typescript
@@ -1163,7 +1163,12 @@ interface FSMessage {
   title?: string;
   body: string;
   attachments?: FSAttachment[];
-  data?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
+}
+
+interface SendOptions {
+  tags?: string[];
+  params?: Record<string, string>;
 }
 
 interface FSAttachment {

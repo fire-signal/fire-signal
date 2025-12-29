@@ -29,10 +29,6 @@ export function validateMessage(message: FSMessage): boolean {
     throw new Error('Message title must be a string');
   }
 
-  if (message.tags !== undefined && !Array.isArray(message.tags)) {
-    throw new Error('Message tags must be an array');
-  }
-
   return true;
 }
 

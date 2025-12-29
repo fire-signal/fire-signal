@@ -67,7 +67,7 @@ export class JsonWebhookProvider extends BaseProvider {
     const body = JSON.stringify({
       title: message.title,
       body: message.body,
-      tags: message.tags,
+      tags: ctx.tags,
       metadata: message.metadata,
     });
 

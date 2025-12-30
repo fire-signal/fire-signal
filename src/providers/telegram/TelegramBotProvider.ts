@@ -102,6 +102,17 @@ export class TelegramBotProvider extends BaseProvider {
         text: this.formatContent(message),
       };
 
+      if (message.actions && message.actions.length > 0) {
+        payload.reply_markup = {
+          inline_keyboard: message.actions.map((action) => [
+            {
+              text: action.label,
+              url: action.url,
+            },
+          ]),
+        };
+      }
+
       if (parseMode) payload.parse_mode = parseMode;
       if (disablePreview === 'true') payload.disable_web_page_preview = true;
       if (disableNotification === 'true') payload.disable_notification = true;

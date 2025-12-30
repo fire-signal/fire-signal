@@ -62,6 +62,33 @@ export class SlackWebhookProvider extends BaseProvider {
       text: this.formatContent(message),
     };
 
+    if (message.actions && message.actions.length > 0) {
+      payload.blocks = [
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: this.formatContent(message),
+          },
+        },
+        {
+          type: 'actions',
+          elements: message.actions.map((action) => ({
+            type: 'button',
+            text: {
+              type: 'plain_text',
+              text: action.label,
+            },
+            url: action.url,
+            style:
+              action.style === 'primary' || action.style === 'danger'
+                ? action.style
+                : undefined,
+          })),
+        },
+      ];
+    }
+
     const channel = this.getParam(parsed.params.channel);
     const username = this.getParam(parsed.params.username);
     const iconEmoji = this.getParam(parsed.params.icon_emoji);

@@ -21,7 +21,7 @@ export type {
 } from './core/UrlValidator';
 
 export type { FireSignalOptions, SendOptions } from './core/FireSignal';
-export type { FSMessage, FSAttachment } from './core/Message';
+export type { FSMessage, FSAttachment, FSAction } from './core/Message';
 
 export { BaseProvider } from './providers/base/Provider';
 export { DEFAULT_PROVIDER_CONFIG } from './providers/base/ProviderConfig';

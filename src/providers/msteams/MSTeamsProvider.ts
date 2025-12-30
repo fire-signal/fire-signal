@@ -88,6 +88,19 @@ export class MSTeamsProvider extends BaseProvider {
       ],
     };
 
+    if (message.actions && message.actions.length > 0) {
+      payload.potentialAction = message.actions.map((action) => ({
+        '@type': 'OpenUri',
+        name: action.label,
+        targets: [
+          {
+            os: 'default',
+            uri: action.url,
+          },
+        ],
+      }));
+    }
+
     try {
       const response = await fetch(url, {
         method: 'POST',

@@ -83,5 +83,34 @@ describe('DiscordWebhookProvider', () => {
       );
       expect(result.success).toBe(true);
     });
+    it('should send message with actions as buttons', async () => {
+      const fetchSpy = mockGlobalFetch({ response: { ok: true, status: 200 } });
+      const parsed = provider.parseUrl('discord://123456/abcdef');
+
+      await provider.send(
+        {
+          body: 'Click the button',
+          actions: [{ label: 'Visit', url: 'https://example.com' }],
+        },
+        { parsed, url: 'discord://123456/abcdef' }
+      );
+
+      const expectedPayload = {
+        embeds: [
+          {
+            title: undefined,
+            description: 'Click the button\n\n🔗 [Visit](https://example.com)',
+            color: 5793266,
+          },
+        ],
+      };
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.stringContaining('discord.com'),
+        expect.objectContaining({
+          body: JSON.stringify(expectedPayload),
+        })
+      );
+    });
   });
 });

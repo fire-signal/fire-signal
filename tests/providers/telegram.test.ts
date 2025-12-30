@@ -42,10 +42,38 @@ describe('TelegramBotProvider', () => {
       const parsed = provider.parseUrl('tgram://123456:ABC/987654');
       const result = await provider.send(
         { title: 'Test', body: 'Hello Telegram' },
-        { parsed }
+        { parsed, url: 'tgram://123456:ABC/987654' }
       );
       // Just verify we get a result object
       expect(result).toHaveProperty('success');
+    });
+
+    it('should send message with inline keyboard actions', async () => {
+      const fetchSpy = mockGlobalFetch({ response: { ok: true, status: 200 } });
+      const parsed = provider.parseUrl('tgram://123456:ABC/987654');
+
+      await provider.send(
+        {
+          body: 'Hello',
+          actions: [{ label: 'Open', url: 'https://telegram.org' }],
+        },
+        { parsed, url: 'tgram://123456:ABC/987654' }
+      );
+
+      const expectedPayload = {
+        chat_id: '987654',
+        text: 'Hello',
+        reply_markup: {
+          inline_keyboard: [[{ text: 'Open', url: 'https://telegram.org' }]],
+        },
+      };
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.stringContaining('api.telegram.org'),
+        expect.objectContaining({
+          body: JSON.stringify(expectedPayload),
+        })
+      );
     });
   });
 });

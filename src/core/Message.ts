@@ -20,9 +20,29 @@ export interface FSMessage {
   attachments?: FSAttachment[];
 
   /**
+   * Interactive actions (buttons) to display with the message.
+   * Note: Support varies by provider.
+   */
+  actions?: FSAction[];
+
+  /**
    * Additional metadata that providers can use for custom behavior.
    */
   metadata?: Record<string, unknown>;
+}
+
+/**
+ * Represents an interactive action (button).
+ */
+export interface FSAction {
+  /** Label text to display on the button. */
+  label: string;
+
+  /** URL to open when clicked. */
+  url: string;
+
+  /** Visual style of the button. @default 'secondary' */
+  style?: 'primary' | 'secondary' | 'danger';
 }
 
 /**

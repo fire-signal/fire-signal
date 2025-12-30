@@ -766,134 +766,446 @@ Retryable HTTP codes: `429`, `500`, `502`, `503`, `504`
 
 ---
 
-## 🔗 URL Formats
+## 📦 Providers
 
 <details>
 <summary><strong>Discord</strong></summary>
 
+**URL Format:**
+
 ```
-discord://webhookId/webhookToken?username=Bot&avatar_url=...
+discord://webhookId/webhookToken
 ```
 
-Get your webhook URL from Discord → Server Settings → Integrations → Webhooks
+**Query Parameters:**
+
+| Parameter    | Description                       |
+| ------------ | --------------------------------- |
+| `username`   | Override webhook username         |
+| `avatar_url` | Override webhook avatar           |
+| `tts`        | Text-to-speech (`true` / `false`) |
+
+**Features:**
+
+| Feature     | Supported | Notes                                   |
+| ----------- | :-------: | --------------------------------------- |
+| Title       |    ✅     | Displayed as bold text                  |
+| Attachments |    ✅     | Files upload via multipart              |
+| Actions     |    ✅     | Rendered as clickable links in an Embed |
+
+**Example:**
+
+```typescript
+fire.add('discord://123456789/AbCdEfGhI?username=Deploy%20Bot');
+
+await fire.send({
+  title: 'Deployment Complete',
+  body: 'Version 2.0.1 deployed to production.',
+  actions: [
+    { label: 'View Logs', url: 'https://logs.example.com' },
+    {
+      label: 'Rollback',
+      url: 'https://deploy.example.com/rollback',
+      style: 'danger',
+    },
+  ],
+});
+```
+
+**Setup:**
+
+1. Go to Discord → Server Settings → Integrations → Webhooks
+2. Create a webhook and copy the URL
+3. Extract `webhookId` and `webhookToken` from:
+   `https://discord.com/api/webhooks/{webhookId}/{webhookToken}`
 
 </details>
 
 <details>
 <summary><strong>Telegram</strong></summary>
 
+**URL Format:**
+
 ```
-tgram://botToken/chatId?parse_mode=Markdown
+tgram://botToken/chatId
+telegram://botToken/chatId
 ```
 
-1. Create a bot with [@BotFather](https://t.me/BotFather)
+**Query Parameters:**
+
+| Parameter                  | Description                              |
+| -------------------------- | ---------------------------------------- |
+| `parse_mode`               | `HTML`, `Markdown`, or `MarkdownV2`      |
+| `disable_web_page_preview` | Disable link previews (`true` / `false`) |
+| `disable_notification`     | Send silently (`true` / `false`)         |
+
+**Features:**
+
+| Feature     | Supported | Notes                               |
+| ----------- | :-------: | ----------------------------------- |
+| Title       |    ✅     | Displayed as bold text (Markdown)   |
+| Attachments |    ✅     | Sent via `sendDocument` API         |
+| Actions     |    ✅     | Rendered as Inline Keyboard buttons |
+
+**Example:**
+
+```typescript
+fire.add('tgram://123456:ABC-DEF/987654321?parse_mode=Markdown');
+
+await fire.send({
+  title: 'Order Shipped',
+  body: 'Your order #12345 has been shipped!',
+  actions: [{ label: 'Track Order', url: 'https://track.example.com/12345' }],
+});
+```
+
+**Setup:**
+
+1. Create a bot with [@BotFather](https://t.me/BotFather), get the token
 2. Get your chat ID from [@userinfobot](https://t.me/userinfobot)
-3. For groups, use negative chat IDs
+3. For groups, use the negative chat ID (e.g., `-1001234567890`)
 
 </details>
 
 <details>
 <summary><strong>Rocket.Chat</strong></summary>
 
+**URL Format:**
+
 ```
-rocketchat://chat.example.com/webhookToken?channel=#general
+rocketchat://host/webhookToken
+rocketchats://host/webhookToken   # HTTPS
 ```
+
+**Query Parameters:**
+
+| Parameter  | Description                   |
+| ---------- | ----------------------------- |
+| `channel`  | Override channel (`#general`) |
+| `username` | Override bot username         |
+| `avatar`   | Override bot avatar URL       |
+
+**Features:**
+
+| Feature     | Supported | Notes                      |
+| ----------- | :-------: | -------------------------- |
+| Title       |    ✅     | Displayed as bold text     |
+| Attachments |    ❌     | Not supported via webhooks |
+| Actions     |    ❌     | Not supported via webhooks |
+
+**Example:**
+
+```typescript
+fire.add('rocketchats://chat.company.com/abc123?channel=%23devops');
+
+await fire.send({
+  title: 'Build Complete',
+  body: 'Frontend build succeeded.',
+});
+```
+
+**Setup:**
+
+1. Go to Rocket.Chat → Administration → Integrations → Incoming Webhooks
+2. Create a webhook and copy the token
+3. Use: `rocketchat://host/token`
 
 </details>
 
 <details>
 <summary><strong>Slack</strong></summary>
 
+**URL Format:**
+
 ```
-slack://T00000000/B00000000/XXXXXXXX?channel=#alerts
+slack://T00000000/B00000000/XXXXXXXXXXXXXXXX
 ```
 
-Create an Incoming Webhook in your Slack workspace settings
+**Query Parameters:**
+
+| Parameter    | Description                   |
+| ------------ | ----------------------------- |
+| `channel`    | Override channel (`#general`) |
+| `username`   | Override bot username         |
+| `icon_emoji` | Emoji icon (e.g., `:robot:`)  |
+| `icon_url`   | URL to icon image             |
+
+**Features:**
+
+| Feature     | Supported | Notes                               |
+| ----------- | :-------: | ----------------------------------- |
+| Title       |    ✅     | Displayed as bold text              |
+| Attachments |    ❌     | Not supported via Incoming Webhooks |
+| Actions     |    ✅     | Rendered as Block Kit buttons       |
+
+**Example:**
+
+```typescript
+fire.add('slack://T12345678/B87654321/xyzABC123?channel=%23alerts');
+
+await fire.send({
+  title: 'New Support Ticket',
+  body: 'Ticket #5678 requires attention.',
+  actions: [
+    {
+      label: 'View Ticket',
+      url: 'https://support.example.com/5678',
+      style: 'primary',
+    },
+    {
+      label: 'Ignore',
+      url: 'https://support.example.com/5678/close',
+      style: 'danger',
+    },
+  ],
+});
+```
+
+**Setup:**
+
+1. Go to Slack → Apps → Incoming Webhooks
+2. Create a webhook for your workspace
+3. Extract `T.../B.../XXX` from the webhook URL
 
 </details>
 
 <details>
 <summary><strong>Email (SMTP)</strong></summary>
 
+**URL Format:**
+
 ```
-mailto://user:pass@smtp.gmail.com?to=team@company.com
-mailtos://user:pass@smtp.gmail.com:465?to=team@company.com
+mailto://user:pass@smtp.host.com?to=recipient@example.com
+mailtos://user:pass@smtp.host.com:465?to=recipient@example.com   # TLS
 ```
 
-**Note:** Encode `@` in username as `%40`
+**Query Parameters:**
 
-Example:
-`mailto://alerts%40company.com:password@smtp.gmail.com?to=team@company.com`
+| Parameter | Description                         |
+| --------- | ----------------------------------- |
+| `to`      | Recipient email(s), comma-separated |
+| `cc`      | CC recipient(s)                     |
+| `bcc`     | BCC recipient(s)                    |
+| `from`    | Override sender name                |
+| `name`    | Display name for sender             |
+
+**Features:**
+
+| Feature     | Supported | Notes                     |
+| ----------- | :-------: | ------------------------- |
+| Title       |    ✅     | Used as email subject     |
+| Attachments |    ✅     | Sent as email attachments |
+| Actions     |    ❌     | Not supported             |
+
+**Example:**
+
+```typescript
+fire.add(
+  'mailtos://alerts%40company.com:password@smtp.gmail.com:465?to=team@company.com'
+);
+
+await fire.send({
+  title: 'Weekly Report',
+  body: '<h1>Sales Report</h1><p>Revenue increased by 15%.</p>',
+  attachments: [
+    { name: 'report.pdf', url: 'https://reports.example.com/weekly.pdf' },
+  ],
+});
+```
+
+**Setup:**
+
+1. Encode `@` in username as `%40`
+2. Use `mailtos://` for TLS (port 465 or 587)
+3. For Gmail, enable "Less secure apps" or use App Passwords
 
 </details>
 
 <details>
-<summary><strong>Generic Webhook</strong></summary>
+<summary><strong>Generic Webhook (JSON)</strong></summary>
+
+**URL Format:**
 
 ```
 json://api.example.com/webhook
 jsons://api.example.com/webhook   # HTTPS
 ```
 
-Sends JSON payload with `title`, `body`, `tags`, and `metadata`
+**Features:**
+
+| Feature     | Supported | Notes                    |
+| ----------- | :-------: | ------------------------ |
+| Title       |    ✅     | Included in JSON payload |
+| Attachments |    ❌     | Not supported            |
+| Actions     |    ❌     | Not supported            |
+
+**Payload Structure:**
+
+The webhook receives a JSON payload with the following structure:
+
+```json
+{
+  "title": "Message Title",
+  "body": "Message body",
+  "tags": ["tag1", "tag2"],
+  "metadata": { "key": "value" }
+}
+```
+
+> **Note:** `tags` comes from `SendOptions.tags`, not from the message itself.
+
+**Example:**
+
+```typescript
+fire.add('jsons://api.example.com/notifications/webhook', ['alerts']);
+
+await fire.send(
+  {
+    title: 'Custom Event',
+    body: 'Something happened!',
+    metadata: { eventId: 123, severity: 'high' },
+  },
+  { tags: ['alerts'] }
+);
+// Payload sent: { title: "Custom Event", body: "...", tags: ["alerts"], metadata: {...} }
+```
 
 </details>
 
 <details>
 <summary><strong>ntfy</strong></summary>
 
+**URL Format:**
+
 ```
-ntfy://ntfy.sh/my-topic?priority=high&tags=fire
-ntfys://ntfy.sh/my-topic    # HTTPS
-ntfy://user:pass@my-server.com/topic   # With auth
+ntfy://ntfy.sh/my-topic
+ntfys://ntfy.sh/my-topic          # HTTPS
+ntfy://user:pass@server.com/topic # With auth
 ```
 
 **Query Parameters:**
 
-- `priority`: min, low, default, high, urgent
-- `tags`: Comma-separated emoji tags (e.g., warning,skull)
-- `click`: URL to open when clicked
-- `attach`: Attachment URL
-- `icon`: Notification icon URL
-- `email`: Email for notification
-- `delay`: Delay before sending (e.g., 30min, 2h)
+| Parameter  | Description                                       |
+| ---------- | ------------------------------------------------- |
+| `priority` | `min`, `low`, `default`, `high`, `urgent`         |
+| `tags`     | Comma-separated emoji tags (e.g., `warning,fire`) |
+| `click`    | URL to open when notification is clicked          |
+| `attach`   | URL to attachment                                 |
+| `icon`     | Notification icon URL                             |
+| `email`    | Email address for email notifications             |
+| `delay`    | Delay before sending (e.g., `30min`, `2h`)        |
+
+**Features:**
+
+| Feature     | Supported | Notes                               |
+| ----------- | :-------: | ----------------------------------- |
+| Title       |    ✅     | Sent as notification title          |
+| Attachments |    ✅     | Via `attach` query param or content |
+| Actions     |    ❌     | Not supported via fire-signal       |
+
+**Example:**
+
+```typescript
+fire.add('ntfys://ntfy.sh/my-alerts?priority=high&tags=warning');
+
+await fire.send({
+  title: 'Server Alert',
+  body: 'CPU usage exceeded 90%.',
+});
+```
+
+**Setup:**
+
+1. Use `ntfy.sh` or self-host your own server
+2. Subscribe to the topic using the ntfy app
+3. Use the topic name in the URL
 
 </details>
 
 <details>
 <summary><strong>Gotify</strong></summary>
 
+**URL Format:**
+
 ```
-gotify://my-server.com/appToken?priority=5
+gotify://my-server.com/appToken
 gotifys://my-server.com/appToken   # HTTPS
 ```
 
 **Query Parameters:**
 
-- `priority`: 1-10 (default 5)
+| Parameter  | Description                |
+| ---------- | -------------------------- |
+| `priority` | 1-10, higher = more urgent |
 
-Create an Application in Gotify to get the token.
+**Features:**
+
+| Feature     | Supported | Notes                      |
+| ----------- | :-------: | -------------------------- |
+| Title       |    ✅     | Sent as notification title |
+| Attachments |    ❌     | Not supported              |
+| Actions     |    ❌     | Not supported              |
+
+**Example:**
+
+```typescript
+fire.add('gotifys://push.example.com/AbCdEfGh?priority=8');
+
+await fire.send({
+  title: 'Security Alert',
+  body: 'Suspicious login detected.',
+});
+```
+
+**Setup:**
+
+1. Self-host Gotify or use a hosted instance
+2. Create an Application in Settings → Applications
+3. Copy the app token
 
 </details>
 
 <details>
 <summary><strong>Google Chat</strong></summary>
 
+**URL Format:**
+
 ```
 gchat://SPACE_ID/KEY/TOKEN
 ```
 
-Get your webhook URL from Google Chat:
+**Features:**
 
-1. Open a space → Apps & Integrations → Webhooks → Create webhook
-2. Copy the URL:
+| Feature     | Supported | Notes                         |
+| ----------- | :-------: | ----------------------------- |
+| Title       |    ✅     | Displayed as bold text        |
+| Attachments |    ❌     | Not supported via webhooks    |
+| Actions     |    ❌     | Not supported via fire-signal |
+
+**Example:**
+
+```typescript
+fire.add('gchat://spaces%2FAAAA/keys%2Fbbbb/tokens%2Fcccc');
+
+await fire.send({
+  title: 'Calendar Reminder',
+  body: 'Team standup in 15 minutes.',
+});
+```
+
+**Setup:**
+
+1. Open a Google Chat space → Settings → Apps & Integrations → Webhooks
+2. Create a webhook and copy the URL:
    `https://chat.googleapis.com/v1/spaces/SPACE/messages?key=KEY&token=TOKEN`
-3. Convert to: `gchat://SPACE/KEY/TOKEN`
+3. Convert to: `gchat://SPACE/KEY/TOKEN` (URL-encode slashes as `%2F`)
 
 </details>
 
 <details>
 <summary><strong>Mattermost</strong></summary>
+
+**URL Format:**
 
 ```
 mmost://host/HOOK_ID
@@ -902,52 +1214,140 @@ mmosts://host/HOOK_ID    # HTTPS
 
 **Query Parameters:**
 
-- `channel`: Override default channel (#general, @user)
-- `username`: Override webhook username
-- `icon_url`: Override webhook icon
+| Parameter  | Description                            |
+| ---------- | -------------------------------------- |
+| `channel`  | Override channel (`#general`, `@user`) |
+| `username` | Override webhook username              |
+| `icon_url` | Override webhook icon                  |
 
-Get hook from: Integrations → Incoming Webhooks
+**Features:**
+
+| Feature     | Supported | Notes                         |
+| ----------- | :-------: | ----------------------------- |
+| Title       |    ✅     | Displayed as bold text        |
+| Attachments |    ❌     | Not supported via webhooks    |
+| Actions     |    ❌     | Not supported via fire-signal |
+
+**Example:**
+
+```typescript
+fire.add('mmosts://chat.company.com/abc123def?channel=%23devops');
+
+await fire.send({
+  title: 'Deployment Notice',
+  body: 'Backend v3.2.0 deployed to staging.',
+});
+```
+
+**Setup:**
+
+1. Go to Mattermost → Integrations → Incoming Webhooks
+2. Create a webhook and copy the hook ID
+3. Use: `mmost://host/HOOK_ID`
 
 </details>
 
 <details>
 <summary><strong>MS Teams</strong></summary>
 
+**URL Format:**
+
 ```
-msteams://tenant.webhook.office.com/webhookb2/...
+msteams://tenant.webhook.office.com/webhookb2/GUID@GUID/IncomingWebhook/GUID/GUID
 ```
 
 **Query Parameters:**
 
-- `theme_color`: Hex color for card accent (without #)
+| Parameter     | Description                        |
+| ------------- | ---------------------------------- |
+| `theme_color` | Hex color for card accent (no `#`) |
 
-Get webhook URL from: Channel settings → Connectors → Incoming Webhook
+**Features:**
+
+| Feature     | Supported | Notes                               |
+| ----------- | :-------: | ----------------------------------- |
+| Title       |    ✅     | Displayed as card title             |
+| Attachments |    ❌     | Not supported via Incoming Webhooks |
+| Actions     |    ✅     | Rendered as OpenUri buttons         |
+
+**Example:**
+
+```typescript
+fire.add(
+  'msteams://tenant.webhook.office.com/webhookb2/abc@def/IncomingWebhook/ghi/jkl?theme_color=FF0000'
+);
+
+await fire.send({
+  title: 'Incident Alert',
+  body: 'Service degradation detected in production.',
+  actions: [
+    { label: 'View Dashboard', url: 'https://grafana.example.com/d/prod' },
+    {
+      label: 'Acknowledge',
+      url: 'https://incidents.example.com/123/ack',
+      style: 'primary',
+    },
+  ],
+});
+```
+
+**Setup:**
+
+1. Go to MS Teams → Channel settings → Connectors → Incoming Webhook
+2. Create a webhook and copy the URL
+3. Replace `https://` with `msteams://`
 
 </details>
 
 <details>
 <summary><strong>OneSignal</strong></summary>
 
+**URL Format:**
+
 ```
 onesignal://APP_ID@REST_API_KEY/
 onesignal://APP_ID@REST_API_KEY/{player_id}/
-onesignal://APP_ID@REST_API_KEY/#Subscribed%20Users/
+onesignal://APP_ID@REST_API_KEY/#Segment%20Name/
 onesignal://APP_ID@REST_API_KEY/@{external_user_id}/
-onesignal://template_id:APP_ID@REST_API_KEY/
 ```
 
 **Path Targets:**
 
-- `{player_id}` - Target by player ID
-- `#{segment}` - Target by segment (URL encode spaces)
-- `@{user_id}` - Target by external user ID
-- `{email}` - Target by email address
+| Target        | Description                           |
+| ------------- | ------------------------------------- |
+| `{player_id}` | Target by OneSignal player ID         |
+| `#{segment}`  | Target by segment (URL-encode spaces) |
+| `@{user_id}`  | Target by external user ID            |
+| `{email}`     | Target by email address               |
 
 **Query Parameters:**
 
-- `subtitle`: iOS subtitle
-- `language`: 2-char language code (default: en)
-- `image`: yes/no to include icon
+| Parameter  | Description                          |
+| ---------- | ------------------------------------ |
+| `subtitle` | iOS subtitle                         |
+| `language` | 2-char language code (default: `en`) |
+| `image`    | `yes`/`no` to include icon           |
+
+**Features:**
+
+| Feature     | Supported | Notes                         |
+| ----------- | :-------: | ----------------------------- |
+| Title       |    ✅     | Sent as notification title    |
+| Attachments |    ❌     | Not supported                 |
+| Actions     |    ❌     | Not supported via fire-signal |
+
+**Example:**
+
+```typescript
+fire.add('onesignal://abc123@def456/#Active%20Users');
+
+await fire.send({
+  title: 'New Feature',
+  body: 'Check out our new dashboard!',
+});
+```
+
+**Setup:**
 
 Get credentials from: OneSignal Dashboard → Settings → Keys & IDs
 
@@ -956,6 +1356,8 @@ Get credentials from: OneSignal Dashboard → Settings → Keys & IDs
 <details>
 <summary><strong>Pushover</strong></summary>
 
+**URL Format:**
+
 ```
 pover://USER_KEY@API_TOKEN/
 pover://USER_KEY@API_TOKEN/{device}/
@@ -963,15 +1365,40 @@ pover://USER_KEY@API_TOKEN/{device}/
 
 **Path Targets:**
 
-- `{device}` - Target specific device(s)
+| Target     | Description               |
+| ---------- | ------------------------- |
+| `{device}` | Target specific device(s) |
 
 **Query Parameters:**
 
-- `priority`: -2 (lowest) to 2 (emergency)
-- `sound`: Notification sound
-- `url`: Supplementary URL
-- `html`: yes/no for HTML formatting
-- `ttl`: Time to live in seconds
+| Parameter  | Description                    |
+| ---------- | ------------------------------ |
+| `priority` | -2 (lowest) to 2 (emergency)   |
+| `sound`    | Notification sound             |
+| `url`      | Supplementary URL              |
+| `html`     | `yes`/`no` for HTML formatting |
+| `ttl`      | Time to live in seconds        |
+
+**Features:**
+
+| Feature     | Supported | Notes                         |
+| ----------- | :-------: | ----------------------------- |
+| Title       |    ✅     | Sent as notification title    |
+| Attachments |    ✅     | Image attachments supported   |
+| Actions     |    ❌     | Not supported via fire-signal |
+
+**Example:**
+
+```typescript
+fire.add('pover://userKey123@appToken456?priority=1&sound=cosmic');
+
+await fire.send({
+  title: 'Urgent Alert',
+  body: 'Server CPU at 100%!',
+});
+```
+
+**Setup:**
 
 Get credentials from: Pushover Dashboard
 
@@ -979,6 +1406,8 @@ Get credentials from: Pushover Dashboard
 
 <details>
 <summary><strong>Twilio (SMS & WhatsApp)</strong></summary>
+
+**URL Format:**
 
 ```
 twilio://AccountSID:AuthToken@+1FromPhone/+1ToPhone
@@ -988,12 +1417,36 @@ twilio://AccountSID:AuthToken@+1FromPhone/w:+1ToWhatsApp
 
 **Path Targets:**
 
-- `/+1Phone` - SMS recipient (with country code)
-- `/w:+1Phone` - WhatsApp recipient (w: prefix)
+| Target       | Description                       |
+| ------------ | --------------------------------- |
+| `/+1Phone`   | SMS recipient (with country code) |
+| `/w:+1Phone` | WhatsApp recipient (`w:` prefix)  |
 
 Multiple recipients supported via path segments.
 
-Get credentials from: Twilio Console → Account Info
+**Features:**
+
+| Feature     | Supported | Notes                               |
+| ----------- | :-------: | ----------------------------------- |
+| Title       |    ❌     | SMS/WhatsApp doesn't support titles |
+| Attachments |    ✅     | MMS/WhatsApp media supported        |
+| Actions     |    ❌     | Not supported                       |
+
+**Example:**
+
+```typescript
+fire.add('twilio://ACXXXX:authToken@+15551234567/+15559876543');
+
+await fire.send({
+  body: 'Your verification code is 123456.',
+});
+```
+
+**Setup:**
+
+1. Get credentials from: Twilio Console → Account Info
+2. Use your Twilio phone number as `@+1FromPhone`
+3. Add recipient numbers as path segments
 
 </details>
 
@@ -1163,12 +1616,19 @@ interface FSMessage {
   title?: string;
   body: string;
   attachments?: FSAttachment[];
+  actions?: FSAction[];
   metadata?: Record<string, unknown>;
 }
 
 interface SendOptions {
   tags?: string[];
   params?: Record<string, string>;
+}
+
+interface FSAction {
+  label: string;
+  url: string;
+  style?: 'primary' | 'secondary' | 'danger';
 }
 
 interface FSAttachment {

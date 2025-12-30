@@ -54,9 +54,38 @@ export class DiscordWebhookProvider extends BaseProvider {
     }
 
     const webhookUrl = `https://discord.com/api/webhooks/${webhookId}/${webhookToken}`;
+    const embeds: unknown[] = [];
+    let content = this.formatContent(message);
+
+    if (message.actions && message.actions.length > 0) {
+      const links = message.actions
+        .map((action) => {
+          const icon =
+            action.style === 'danger'
+              ? '🔴'
+              : action.style === 'primary'
+                ? '🔵'
+                : '🔗';
+          return `${icon} [${action.label}](${action.url})`;
+        })
+        .join('  ');
+
+      embeds.push({
+        title: message.title,
+        description: message.body + '\n\n' + links,
+        color: 0x5865f2, // Blurple
+      });
+
+      content = '';
+    }
+
     const payload: Record<string, unknown> = {
-      content: this.formatContent(message),
+      content: content || undefined,
     };
+
+    if (embeds.length > 0) {
+      payload.embeds = embeds;
+    }
 
     const avatarUrl = this.getParam(parsed.params.avatar_url);
     const username = this.getParam(parsed.params.username);

@@ -38,3 +38,46 @@ jobs:
 
       - name: Test
         run: pnpm test:run
+
+  notify:
+    name: Notify
+    runs-on: ubuntu-latest
+    needs: [build]
+    if: always()
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      - name: Notify Success
+        if: needs.build.result == 'success'
+        env:
+          FIRE_SIGNAL_URLS: ntfys://ntfy.sh/fire-signal-ci?priority=default&tags=white_check_mark
+        run: |
+          npx fire-signal \
+            --title "CI Passed" \
+            --body "fire-signal build & tests passed on ${{ github.ref_name }} - Commit: ${{ github.sha }} by ${{ github.actor }}"
+
+      - name: Notify Failure
+        if: needs.build.result == 'failure'
+        env:
+          FIRE_SIGNAL_URLS: ntfys://ntfy.sh/fire-signal-ci?priority=high&tags=x
+        run: |
+          npx fire-signal \
+            --title "CI Failed" \
+            --body "fire-signal build failed on ${{ github.ref_name }} - Commit: ${{ github.sha }} by ${{ github.actor }} - View: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"

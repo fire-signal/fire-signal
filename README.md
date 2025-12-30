@@ -1585,6 +1585,162 @@ const fire = new FireSignal({
 
 ---
 
+## 📝 Templates Engine
+
+Fire-Signal includes a built-in template engine powered by
+[Handlebars](https://handlebarsjs.com/). Templates separate message content from
+code, making it easy to manage and reuse notification formats.
+
+### Inline Templates
+
+```typescript
+// Register an inline template
+fire.registerTemplateInline('deploy', {
+  title: 'Deploy: {{environment}}',
+  body: 'Version {{version}} deployed by {{user}}.\n\nChanges:\n{{changes}}',
+});
+
+// Send using the template
+await fire.sendTemplate('deploy', {
+  environment: 'Production',
+  version: 'v2.1.0',
+  user: 'ci-bot',
+  changes: '- Fixed login bug\n- Improved performance',
+});
+```
+
+### File-Based Templates
+
+Templates can be stored in `.hbs` files with optional frontmatter for the title:
+
+```handlebars
+---
+title: Alert: {{severity}}
+---
+
+**Service:**
+{{service}}
+**Status:**
+{{status}}
+
+{{#if details}}
+  Details:
+  {{details}}
+{{/if}}
+```
+
+```typescript
+// Register from file
+await fire.registerTemplate('alert', 'templates/alert.hbs');
+
+// Send using the template
+await fire.sendTemplate(
+  'alert',
+  {
+    severity: 'HIGH',
+    service: 'API Gateway',
+    status: 'DOWN',
+    details: 'Connection refused on port 443',
+  },
+  { tags: ['ops'] }
+);
+```
+
+### Template API
+
+| Method                                           | Description                          |
+| ------------------------------------------------ | ------------------------------------ |
+| `registerTemplate(name, filePath)`               | Register template from a `.hbs` file |
+| `registerTemplateInline(name, { title?, body })` | Register template inline             |
+| `sendTemplate(name, data, options?)`             | Render and send a template           |
+
+---
+
+## 🚀 CI/CD Integration
+
+Fire-Signal can be used in your CI/CD pipelines to notify on build
+success/failure.
+
+### GitHub Actions
+
+```yaml
+- name: Notify Build Status
+  env:
+    FIRE_SIGNAL_URLS: ntfys://ntfy.sh/your-topic?priority=default
+  run: |
+    npx fire-signal \
+      --title "Build Passed" \
+      --body "Build succeeded on ${{ github.ref_name }}"
+```
+
+> 💡 **Eating our own dog food:** Fire-Signal uses itself in its own CI/CD
+> pipeline!
+>
+> Subscribe to [`ntfy.sh/fire-signal-ci`](https://ntfy.sh/fire-signal-ci) to see
+> real build notifications.
+>
+> See [`.github/workflows/ci.yml`](.github/workflows/ci.yml) for the
+> implementation.
+
+---
+
+## 🛡️ Enterprise Resilience
+
+Fire-Signal includes built-in rate limiting and circuit breaker patterns to
+prevent cascading failures and respect API limits.
+
+### Configuration
+
+```typescript
+const fire = new FireSignal({
+  resilience: {
+    // Rate limiting: max 5 requests per second per provider
+    rateLimit: {
+      requests: 5,
+      periodMs: 1000,
+    },
+    // Circuit breaker: open after 3 failures, reset after 30s
+    circuitBreaker: {
+      failureThreshold: 3,
+      resetTimeoutMs: 30000,
+    },
+  },
+});
+```
+
+### Rate Limiting
+
+The rate limiter uses a **Token Bucket** algorithm:
+
+- Each provider has its own bucket
+- Tokens are replenished over time
+- Requests are blocked when bucket is empty
+
+### Circuit Breaker
+
+The circuit breaker protects against cascading failures:
+
+| State       | Description                                       |
+| ----------- | ------------------------------------------------- |
+| `CLOSED`    | Normal operation, requests allowed                |
+| `OPEN`      | Too many failures, requests blocked               |
+| `HALF_OPEN` | Testing if service recovered, one request allowed |
+
+```typescript
+import { CircuitState, ResilienceError } from 'fire-signal';
+
+try {
+  await fire.send({ body: 'Test' });
+} catch (error) {
+  if (error instanceof ResilienceError) {
+    console.log(`Blocked: ${error.reason}`); // 'rate_limit' | 'circuit_breaker'
+    console.log(`Retry after: ${error.retryAfterMs}ms`);
+  }
+}
+```
+
+---
+
 ## 📖 API Reference
 
 ```typescript

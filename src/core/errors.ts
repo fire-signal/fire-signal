@@ -127,3 +127,30 @@ export class FSNetworkError extends FSError {
     return new FSNetworkError(`[${status}] ${msg}`, status, providerId);
   }
 }
+
+/**
+ * Circuit breaker states.
+ */
+export enum CircuitState {
+  /** Normal operation, requests allowed. */
+  CLOSED = 'CLOSED',
+  /** Failing, requests blocked. */
+  OPEN = 'OPEN',
+  /** Testing if service recovered. */
+  HALF_OPEN = 'HALF_OPEN',
+}
+
+/**
+ * Error thrown when resilience controls block a request.
+ */
+export class ResilienceError extends FSError {
+  constructor(
+    message: string,
+    public readonly reason: 'rate_limit' | 'circuit_breaker',
+    public readonly providerId: string,
+    public readonly retryAfterMs?: number
+  ) {
+    super(message, 'RESILIENCE_ERROR');
+    this.name = 'ResilienceError';
+  }
+}

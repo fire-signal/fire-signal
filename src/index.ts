@@ -22,6 +22,10 @@ export type {
 
 export type { FireSignalOptions, SendOptions } from './core/FireSignal';
 export type { FSMessage, FSAttachment, FSAction } from './core/Message';
+export { TemplateManager } from './core/templates';
+export type { FSTemplate } from './core/templates';
+export type { ResilienceConfig } from './core/resilience';
+export { CircuitState, ResilienceError } from './core/errors';
 
 export { BaseProvider } from './providers/base/Provider';
 export { DEFAULT_PROVIDER_CONFIG } from './providers/base/ProviderConfig';

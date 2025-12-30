@@ -1,5 +1,7 @@
 import type { FSMessage } from './Message';
-import { FSProviderNotFoundError } from './errors';
+import { TemplateManager } from './templates';
+import { ResilienceManager, ResilienceConfig } from './resilience';
+import { FSProviderNotFoundError, ResilienceError } from './errors';
 import type { FSProvider, FSProviderResult } from '../providers/base/Provider';
 import { createDefaultProviders } from '../providers';
 import { loadFSConfig, FSConfigEntry } from '../config/ConfigLoader';
@@ -72,6 +74,11 @@ export interface FireSignalOptions {
    * Called when a provider fails to send a notification.
    */
   onError?: FSOnErrorConfig;
+
+  /**
+   * Resilience configuration for rate limiting and circuit breaker.
+   */
+  resilience?: ResilienceConfig;
 }
 
 /**
@@ -128,6 +135,8 @@ export class FireSignal {
   private configPaths: string[];
   private configLoaded = false;
   private onErrorConfig?: FSOnErrorConfig;
+  private templateManager: TemplateManager = new TemplateManager();
+  private resilienceManager?: ResilienceManager;
 
   constructor(options: FireSignalOptions = {}) {
     // Set up logger: custom logger takes precedence, then logLevel, then silent
@@ -154,6 +163,10 @@ export class FireSignal {
 
     if (options.urls) {
       this.add(options.urls);
+    }
+
+    if (options.resilience) {
+      this.resilienceManager = new ResilienceManager(options.resilience);
     }
   }
 
@@ -184,6 +197,70 @@ export class FireSignal {
         this.logger(`Added URL: ${url}`, 'debug');
       }
     }
+  }
+
+  /**
+   * Register a message template from a file.
+   *
+   * Template files support frontmatter for title:
+   * ```
+   * ---
+   * title: Hello {{name}}!
+   * ---
+   * Welcome to our service, {{name}}.
+   * ```
+   *
+   * @param name - Unique template identifier.
+   * @param filePath - Path to the template file.
+   */
+  async registerTemplate(name: string, filePath: string): Promise<void> {
+    await this.templateManager.register(name, filePath);
+    this.logger(`Registered template: ${name}`, 'debug');
+  }
+
+  /**
+   * Register a message template inline (no file).
+   *
+   * @param name - Unique template identifier.
+   * @param template - Object with title (optional) and body Handlebars templates.
+   */
+  registerTemplateInline(
+    name: string,
+    template: { title?: string; body: string }
+  ): void {
+    this.templateManager.registerInline(name, template);
+    this.logger(`Registered inline template: ${name}`, 'debug');
+  }
+
+  /**
+   * Send a message using a registered template.
+   *
+   * @param templateName - Name of the registered template.
+   * @param data - Data object for variable substitution.
+   * @param options - Send options (tags, params).
+   * @returns Array of results from each provider.
+   *
+   * @example
+   * ```typescript
+   * fire.registerTemplateInline('alert', {
+   *   title: 'Alert: {{severity}}',
+   *   body: 'Service {{service}} is {{status}}.',
+   * });
+   *
+   * await fire.sendTemplate('alert', {
+   *   severity: 'HIGH',
+   *   service: 'API Gateway',
+   *   status: 'DOWN',
+   * }, { tags: ['ops'] });
+   * ```
+   */
+  async sendTemplate(
+    templateName: string,
+    data: Record<string, unknown>,
+    options: SendOptions = {}
+  ): Promise<FSProviderResult[]> {
+    const message = this.templateManager.render(templateName, data);
+    return this.send(message, options);
   }
 
   private addFromConfig(entries: FSConfigEntry[]): void {
@@ -288,6 +365,20 @@ export class FireSignal {
       }
 
       try {
+        // Check resilience (rate limit / circuit breaker)
+        if (this.resilienceManager) {
+          try {
+            this.resilienceManager.checkAllowed(provider.id);
+          } catch (error) {
+            if (error instanceof ResilienceError) {
+              results.push({ success: false, providerId: provider.id, error });
+              this.logger(`[${provider.id}] BLOCKED: ${error.message}`, 'warn');
+              continue;
+            }
+            throw error;
+          }
+        }
+
         const parsed = provider.parseUrl(processedUrl);
         this.logger(`Sending via ${provider.id}...`, 'debug');
 
@@ -299,8 +390,10 @@ export class FireSignal {
         results.push(result);
 
         if (result.success) {
+          this.resilienceManager?.recordSuccess(provider.id);
           this.logger(`[${provider.id}] OK`, 'info');
         } else {
+          this.resilienceManager?.recordFailure(provider.id);
           this.logger(
             `[${provider.id}] FAILED: ${result.error?.message}`,
             'error'
@@ -314,6 +407,7 @@ export class FireSignal {
           });
         }
       } catch (error) {
+        this.resilienceManager?.recordFailure(provider.id);
         const err = error instanceof Error ? error : new Error(String(error));
         results.push({ success: false, providerId: provider.id, error: err });
         this.logger(`[${provider.id}] ERROR: ${err.message}`, 'error');

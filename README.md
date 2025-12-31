@@ -1503,6 +1503,44 @@ FIRE_SIGNAL_CONFIG_PATH="/etc/fire-signal.yml:~/.fire-signal.yml"
 
 ---
 
+## 🌍 Multi-Environment Support
+
+Fire-Signal simplifies different configurations for development, staging, and
+production.
+
+### Mode Option
+
+```typescript
+const fire = new FireSignal({
+  mode: process.env.NODE_ENV === 'production' ? 'enabled' : 'dryRun',
+});
+```
+
+| Mode         | Behavior                   |
+| ------------ | -------------------------- |
+| `'enabled'`  | Normal operation (default) |
+| `'disabled'` | Silent, skips all sends    |
+| `'dryRun'`   | Logs but doesn't send      |
+
+### Environment-Specific Config Files
+
+Fire-Signal auto-detects `fire-signal.{NODE_ENV}.yml`:
+
+```
+fire-signal.yml             # Base (fallback)
+fire-signal.development.yml # NODE_ENV=development
+fire-signal.production.yml  # NODE_ENV=production
+```
+
+```typescript
+await fire.loadConfig(); // Auto-detects based on NODE_ENV
+
+// Or load specific file:
+await fire.loadConfig('config/staging.yml');
+```
+
+---
+
 ## 💻 CLI
 
 ```bash

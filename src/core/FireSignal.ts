@@ -79,6 +79,15 @@ export interface FireSignalOptions {
    * Resilience configuration for rate limiting and circuit breaker.
    */
   resilience?: ResilienceConfig;
+
+  /**
+   * Notification mode.
+   * - 'enabled': Normal operation, sends notifications (default)
+   * - 'disabled': Silent, skips all sends
+   * - 'dryRun': Logs but doesn't send
+   * @default 'enabled'
+   */
+  mode?: 'enabled' | 'disabled' | 'dryRun';
 }
 
 /**
@@ -137,6 +146,7 @@ export class FireSignal {
   private onErrorConfig?: FSOnErrorConfig;
   private templateManager: TemplateManager = new TemplateManager();
   private resilienceManager?: ResilienceManager;
+  private mode: 'enabled' | 'disabled' | 'dryRun' = 'enabled';
 
   constructor(options: FireSignalOptions = {}) {
     // Set up logger: custom logger takes precedence, then logLevel, then silent
@@ -167,6 +177,10 @@ export class FireSignal {
 
     if (options.resilience) {
       this.resilienceManager = new ResilienceManager(options.resilience);
+    }
+
+    if (options.mode) {
+      this.mode = options.mode;
     }
   }
 
@@ -271,11 +285,27 @@ export class FireSignal {
 
   /**
    * Loads configuration from files and environment variables.
+   *
+   * @param path - Optional path to a specific config file. If provided, loads only that file.
+   *               If not provided, auto-detects environment config (fire-signal.{NODE_ENV}.yml).
    */
-  async loadConfig(): Promise<void> {
-    if (this.configLoaded) return;
+  async loadConfig(path?: string): Promise<void> {
+    if (this.configLoaded && !path) return;
 
     this.logger('Loading configuration...', 'debug');
+
+    // If specific path provided, load only that file
+    if (path) {
+      const config = await loadFSConfig([path]);
+      if (config.entries.length > 0) {
+        this.logger(
+          `Loaded ${config.entries.length} URLs from ${path}`,
+          'debug'
+        );
+        this.addFromConfig(config.entries);
+      }
+      return;
+    }
 
     const envUrls = loadUrlsFromEnv();
     if (envUrls.length > 0) {
@@ -284,7 +314,18 @@ export class FireSignal {
     }
 
     const envConfigPaths = loadConfigPathsFromEnv();
-    const allConfigPaths = [...this.configPaths, ...envConfigPaths];
+
+    // Auto-detect environment-specific config files
+    const nodeEnv = process.env.NODE_ENV;
+    const envSpecificPaths = nodeEnv
+      ? [`fire-signal.${nodeEnv}.yml`, `fire-signal.${nodeEnv}.yaml`]
+      : [];
+
+    const allConfigPaths = [
+      ...envSpecificPaths,
+      ...this.configPaths,
+      ...envConfigPaths,
+    ];
     const config = await loadFSConfig(allConfigPaths);
 
     if (config.entries.length > 0) {
@@ -330,11 +371,26 @@ export class FireSignal {
     options: SendOptions = {}
   ): Promise<FSProviderResult[]> {
     const results: FSProviderResult[] = [];
+
+    // Check mode
+    if (this.mode === 'disabled') {
+      return results;
+    }
+
     const urls = filterByTags(this.entries, options.tags);
 
     if (urls.length === 0) {
       this.logger('No URLs to send to', 'warn');
       return results;
+    }
+
+    // DryRun mode: log but don't send
+    if (this.mode === 'dryRun') {
+      this.logger(
+        `[DRY RUN] Would send to ${urls.length} URL(s): ${message.title || message.body.slice(0, 50)}`,
+        'info'
+      );
+      return urls.map(() => ({ success: true, providerId: 'dry-run' }));
     }
 
     this.logger(`Sending to ${urls.length} URL(s)`, 'info');

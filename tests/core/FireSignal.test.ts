@@ -437,4 +437,56 @@ describe('FireSignal', () => {
       );
     });
   });
+
+  describe('mode option', () => {
+    it('should send normally when mode is enabled (default)', async () => {
+      const fire = new FireSignal({ mode: 'enabled' });
+      fire.add('ntfy://ntfy.sh/test');
+      const results = await fire.send({ body: 'Test' });
+      expect(results).toHaveLength(1);
+      expect(results[0].providerId).toBe('ntfy');
+    });
+
+    it('should skip sending when mode is disabled', async () => {
+      const fire = new FireSignal({ mode: 'disabled' });
+      fire.add('ntfy://ntfy.sh/test');
+      const results = await fire.send({ body: 'Test' });
+      expect(results).toHaveLength(0);
+    });
+
+    it('should log but not send when mode is dryRun', async () => {
+      const logger = vi.fn();
+      const fire = new FireSignal({ mode: 'dryRun', logger });
+      fire.add('ntfy://ntfy.sh/test1');
+      fire.add('ntfy://ntfy.sh/test2');
+
+      const results = await fire.send({ body: 'Test message' });
+
+      expect(results).toHaveLength(2);
+      expect(results[0].providerId).toBe('dry-run');
+      expect(results[0].success).toBe(true);
+      expect(logger).toHaveBeenCalledWith(
+        expect.stringContaining('[DRY RUN]'),
+        'info'
+      );
+    });
+
+    it('should default to enabled mode', async () => {
+      const fire = new FireSignal();
+      fire.add('ntfy://ntfy.sh/test');
+      const results = await fire.send({ body: 'Test' });
+      expect(results).toHaveLength(1);
+      expect(results[0].providerId).not.toBe('dry-run');
+    });
+  });
+
+  describe('loadConfig with path', () => {
+    it('should accept optional path parameter', async () => {
+      const fire = new FireSignal();
+      // Should not throw even if file doesn't exist
+      await expect(
+        fire.loadConfig('/nonexistent/path.yml')
+      ).resolves.toBeUndefined();
+    });
+  });
 });

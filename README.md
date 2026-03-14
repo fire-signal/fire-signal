@@ -155,8 +155,8 @@ await fire.send(
 // 5) Use a Fire Platform template by key
 await fire.send(
   {
-    title: 'Placeholder title (kept for API compatibility)',
-    body: 'Placeholder body (Fire Platform resolves template content)',
+    title: 'Invoice update',
+    body: 'Invoice status update', // kept as fallback/compat field
     metadata: {
       user: { name: 'Alice' },
       order: { id: 'ORD-1001', total: 249.9 },
@@ -176,6 +176,9 @@ await fire.send(
 >
 > Fire Platform also supports `segmentId` when you want explicit segment targeting.
 > Fire Platform also supports `templateKey` for server-side template rendering.
+>
+> Note: currently Fire Platform `send` expects `body` in the payload.
+> When using `templateKey`, keep a concise fallback `body` (and optional `title`).
 
 `fire://` URL format:
 
@@ -199,6 +202,149 @@ Common errors:
 - `404` or DNS error: wrong host in `fire://...@<host>`
 - `queued` but no delivery: check channel `audience` labels or segment filters in Fire Platform
 - no send result in mixed setups: check `tags` routing in Fire-Signal (`SendOptions.tags`)
+
+### Fire Platform Deep Guide
+
+Use this as the single mental model when sending through `fire://`:
+
+- `tags` decide which URLs/providers Fire-Signal will call
+- `audience` and `segmentId` decide which Fire Platform channels receive the message
+- `templateKey` tells Fire Platform which server-side template to resolve
+- `metadata` carries template variables and provider-specific dynamic values
+
+Template behavior with `templateKey`:
+
+- Fire Platform resolves the final message from the selected template
+- `metadata` must include all required template variables
+- keep `body` as a compatibility fallback while API requires it
+
+#### Option Semantics (`tags` vs `audience` vs `segmentId` vs `templateKey`)
+
+| Field | Layer | Purpose | Typical value |
+| --- | --- | --- | --- |
+| `tags` | Fire-Signal | Select URLs/providers inside the current `FireSignal` instance | `['platform', 'backup']` |
+| `audience` | Fire Platform | Filter channels by channel audience labels | `['ops', 'oncall']` |
+| `segmentId` | Fire Platform | Explicit segment targeting | `'seg_01JX...'` |
+| `templateKey` | Fire Platform | Resolve server-side template (`templateKey === template name`) | `'billing_invoice'` |
+
+Important targeting rule:
+
+- prefer one targeting strategy per send (`audience` or `segmentId`) to keep intent explicit
+
+#### Request Mapping (what Fire-Signal sends to Fire Platform)
+
+When using `fire://`, Fire-Signal forwards:
+
+- `title` -> `title`
+- `body` -> `body`
+- `metadata` -> `data`
+- `actions` -> `actions`
+- `audience` -> `audience`
+- `segmentId` -> `segmentId`
+- `templateKey` -> `templateKey`
+
+This means template variables must be present in `metadata`:
+
+```typescript
+await fire.send(
+  {
+    title: 'Invoice update',
+    body: 'Invoice status update',
+    metadata: {
+      user: { name: 'Alice' },
+      invoice: { id: 'INV-1001', total: 249.9 },
+    },
+  },
+  {
+    templateKey: 'billing_invoice',
+    audience: ['billing'],
+  }
+);
+```
+
+#### Production Patterns
+
+Template + audience:
+
+```typescript
+await fire.send(
+  {
+    title: 'Invoice update',
+    body: 'Fallback body',
+    metadata: {
+      customerName: 'Acme Inc',
+      invoiceId: 'INV-1001',
+      amount: 'R$ 249,90',
+      dueDate: '2026-03-20',
+    },
+  },
+  {
+    templateKey: 'billing_invoice',
+    audience: ['billing', 'finance'],
+  }
+);
+```
+
+Segment targeting:
+
+```typescript
+await fire.send(
+  {
+    title: 'Deploy completed',
+    body: 'Version 3.2.1 in production',
+    metadata: { service: 'checkout', env: 'prod' },
+  },
+  {
+    segmentId: 'seg_01JXABCDEF123456',
+  }
+);
+```
+
+Mixed providers with clean routing:
+
+```typescript
+const fire = new FireSignal();
+fire.add('fire://fp_live_your_api_key@api.fire-platform.io', ['platform']);
+fire.add('discord://123/abc', ['fallback']);
+
+await fire.send(
+  {
+    title: 'Incident',
+    body: 'Checkout latency > 2s',
+    metadata: { service: 'checkout', severity: 'high' },
+  },
+  {
+    tags: ['platform'],
+    audience: ['ops', 'oncall'],
+  }
+);
+```
+
+#### Debugging Checklist
+
+If messages are accepted but not delivered as expected:
+
+1. confirm `fire://<api_key>@<host>` host and key are correct
+2. verify `tags` actually include the `fire://` URL entry
+3. verify `audience` labels exist on channels (or use `segmentId`)
+4. if using templates, ensure `templateKey` matches template name exactly
+5. verify required template variables exist in `metadata`
+6. use Fire Platform message trace/logs to inspect per-channel failures
+
+CLI equivalents:
+
+```bash
+# Template + audience
+fire-signal -t "Invoice" -b "Fallback body" \
+  --template-key billing_invoice \
+  -a billing,finance \
+  fire://fp_live_your_api_key@api.fire-platform.io
+
+# Segment
+fire-signal -t "Deploy" -b "v3.2.1 done" \
+  --segment-id seg_01JXABCDEF123456 \
+  fire://fp_live_your_api_key@api.fire-platform.io
+```
 
 ---
 
@@ -876,6 +1022,12 @@ await fire.send(
   { tags: ['main'], audience: ['ops', 'oncall'] }
 );
 ```
+
+Recommended pattern with Fire Platform primary:
+
+- use one entry tagged as `main` for `fire://`
+- use one or more `monitoring` fallback channels outside Fire Platform
+- keep fallback message short and operational (provider, reason, destination)
 
 **Error Messages:** Fire-Signal provides human-readable HTTP error messages:
 
@@ -2000,6 +2152,9 @@ interface SendOptions {
 
   // Fire Platform segment targeting (only used by fire:// provider)
   segmentId?: string;
+
+  // Fire Platform server-side template key (same value as template name)
+  templateKey?: string;
 
   params?: Record<string, string>;
 }

@@ -97,6 +97,16 @@ export interface SendOptions {
   /** Tags to filter URLs. Only URLs with matching tags will receive the notification. */
   tags?: string[];
   /**
+   * Fire Platform audience labels (forwarded only by FireProvider).
+   * This is independent from `tags`, which are used for provider routing.
+   */
+  audience?: string[];
+  /**
+   * Fire Platform segment identifier (forwarded only by FireProvider).
+   * When provided, Fire Platform routes by segment.
+   */
+  segmentId?: string;
+  /**
    * Parameters to replace placeholders in URLs.
    * Placeholders use {name} format and will be replaced with the corresponding value.
    * @example
@@ -442,6 +452,8 @@ export class FireSignal {
           url: processedUrl,
           parsed,
           tags: options.tags,
+          audience: options.audience,
+          segmentId: options.segmentId,
         });
         results.push(result);
 
@@ -574,6 +586,8 @@ export class FireSignal {
           url: processedUrl,
           parsed,
           tags: options.tags,
+          audience: options.audience,
+          segmentId: options.segmentId,
         });
         results.push(result);
       } catch (error) {

@@ -32,6 +32,11 @@ program
     'Tags to filter URLs (comma or space separated)'
   )
   .option('--tags <tags>', 'Alias for -g/--tag')
+  .option(
+    '-a, --audience <labels...>',
+    'Audience labels for fire:// provider (comma or space separated)'
+  )
+  .option('--segment-id <id>', 'Fire Platform segment ID for fire:// provider')
   .option('-c, --config <paths...>', 'Additional config file paths')
   .option(
     '-l, --log-level <level>',
@@ -71,6 +76,8 @@ interface CLIOptions {
   body?: string;
   tag?: string[];
   tags?: string;
+  audience?: string[];
+  segmentId?: string;
   config?: string[];
   logLevel?: string;
   verbose?: boolean;
@@ -148,6 +155,11 @@ async function runCLI(urls: string[], options: CLIOptions): Promise<void> {
     ...(options.tags?.split(/[,\s]+/).filter(Boolean) ?? []),
   ];
 
+  const audienceList =
+    options.audience?.flatMap((label) =>
+      label.split(/[,\s]+/).filter(Boolean)
+    ) ?? [];
+
   // Handle --validate option
   if (options.validate) {
     return handleValidation(allUrls, options);
@@ -209,6 +221,8 @@ async function runCLI(urls: string[], options: CLIOptions): Promise<void> {
   const startTime = Date.now();
   const results = await fsignal.send(message, {
     tags: tagList.length > 0 ? tagList : undefined,
+    audience: audienceList.length > 0 ? audienceList : undefined,
+    segmentId: options.segmentId,
   });
   const totalDuration = Date.now() - startTime;
 

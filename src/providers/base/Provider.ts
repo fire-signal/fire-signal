@@ -32,6 +32,8 @@ export interface FSProviderContext {
   url: string;
   parsed: FSParsedUrl;
   tags?: string[];
+  audience?: string[];
+  segmentId?: string;
 }
 
 /**

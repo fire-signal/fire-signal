@@ -17,6 +17,7 @@ import { MSTeamsProvider } from './msteams/MSTeamsProvider';
 import { OneSignalProvider } from './onesignal/OneSignalProvider';
 import { PushoverProvider } from './pushover/PushoverProvider';
 import { TwilioProvider } from './twilio/TwilioProvider';
+import { FireProvider } from './fire/FireProvider';
 
 // Export individual providers
 export { SmtpProvider } from './email/SmtpProvider';
@@ -33,6 +34,7 @@ export { MSTeamsProvider } from './msteams/MSTeamsProvider';
 export { OneSignalProvider } from './onesignal/OneSignalProvider';
 export { PushoverProvider } from './pushover/PushoverProvider';
 export { TwilioProvider } from './twilio/TwilioProvider';
+export { FireProvider } from './fire/FireProvider';
 
 /**
  * Creates instances of all built-in providers.
@@ -55,6 +57,7 @@ export function createDefaultProviders(): FSProvider[] {
     new OneSignalProvider(),
     new PushoverProvider(),
     new TwilioProvider(),
+    new FireProvider(),
   ];
 }
 
@@ -85,4 +88,5 @@ export const PROVIDER_SCHEMAS = {
   pover: PushoverProvider,
   pushover: PushoverProvider,
   twilio: TwilioProvider,
+  fire: FireProvider,
 } as const;

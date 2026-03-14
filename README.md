@@ -49,6 +49,7 @@ import { FireSignal } from 'fire-signal';
 
 const fire = new FireSignal({
   urls: [
+    'fire://fp_live_your_api_key@api.fire-platform.io',
     'discord://webhookId/webhookToken',
     'tgram://botToken/chatId',
     'rocketchat://chat.company.com/webhookToken',
@@ -84,12 +85,112 @@ yarn add fire-signal
 
 ---
 
+## 🔥 Fire Platform (`fire://`) Quick Start
+
+Use Fire-Signal as a thin client to publish messages to Fire Platform.
+
+```typescript
+import { FireSignal } from 'fire-signal';
+
+const fire = new FireSignal();
+fire.add('fire://fp_live_your_api_key@api.fire-platform.io');
+
+await fire.send({
+  title: 'Deploy Successful',
+  body: 'Version 2.3.0 is live',
+});
+```
+
+More SaaS examples:
+
+```typescript
+const fire = new FireSignal();
+fire.add('fire://fp_live_your_api_key@api.fire-platform.io');
+
+// 1) Basic incident broadcast
+await fire.send({
+  title: 'Incident Detected',
+  body: 'Checkout latency above SLO',
+});
+
+// 2) Send only to channels labeled with audience
+await fire.send(
+  {
+    title: 'Security Alert',
+    body: 'Suspicious login detected',
+  },
+  { audience: ['security', 'oncall'] }
+);
+
+// 3) Include metadata for templates/channels in Fire Platform
+await fire.send(
+  {
+    title: 'New Customer',
+    body: 'Enterprise plan activated',
+    metadata: {
+      customerName: 'Acme Inc',
+      accountManager: 'camila@company.com',
+      mrr: 249,
+    },
+  },
+  { audience: ['sales', 'csm'] }
+);
+
+// 4) Use tags to route inside Fire-Signal + audience for Platform filtering
+// (useful when you mix fire:// with other providers in the same instance)
+fire.add('slack://T00000/B00000/XXXXXX', ['backup']);
+
+await fire.send(
+  {
+    title: 'Order Failed',
+    body: 'Payment provider timeout',
+    metadata: { orderId: 'ORD-8842', region: 'sa-east-1' },
+  },
+  {
+    tags: ['platform'],
+    audience: ['ops', 'payments'],
+  }
+);
+```
+
+> `tags` and `audience` are different:
+>
+> - `tags`: route which URLs/providers in Fire-Signal are selected
+> - `audience`: sent only to Fire Platform (`fire://`) to filter channels
+>
+> Fire Platform also supports `segmentId` when you want explicit segment targeting.
+
+`fire://` URL format:
+
+```text
+fire://<api_key>@api.fire-platform.io
+```
+
+Examples:
+
+```text
+# Public SaaS (recommended)
+fire://fp_live_your_api_key@api.fire-platform.io
+
+# Dedicated/self-hosted API host
+fire://fp_live_your_api_key@notify.company.internal
+```
+
+Common errors:
+
+- `401 Unauthorized`: API key invalid/revoked or from another workspace
+- `404` or DNS error: wrong host in `fire://...@<host>`
+- `queued` but no delivery: check channel `audience` labels or segment filters in Fire Platform
+- no send result in mixed setups: check `tags` routing in Fire-Signal (`SendOptions.tags`)
+
+---
+
 ## ✨ Features
 
 | Feature                        | Description                                                |
 | ------------------------------ | ---------------------------------------------------------- |
 | 📡 **Multi-channel broadcast** | Discord, Slack, Telegram, Email, Rocket.Chat, and webhooks |
-| 🔗 **URL-based config**        | No complex setup — just `discord://webhook/token`          |
+| 🔗 **URL-based config**        | No complex setup — just `fire://key@api.fire-platform.io`  |
 | 🏷️ **Tag-based routing**       | Send to specific audiences with tags                       |
 | 📎 **Attachments**             | Send files via Email, Discord, and Telegram                |
 | 💻 **CLI included**            | Integrate into shell scripts and CI/CD                     |
@@ -109,6 +210,7 @@ import { FireSignal } from 'fire-signal';
 
 // Configure once with placeholder
 const fire = new FireSignal();
+fire.add('fire://fp_live_your_api_key@api.fire-platform.io', ['user']);
 fire.add('mailto://noreply%40myapp.com:password@smtp.myapp.com?to={email}', [
   'user',
 ]);
@@ -134,6 +236,13 @@ import { FireSignal } from 'fire-signal';
 
 // Single instance, multiple audiences
 const fire = new FireSignal();
+
+fire.add('fire://fp_live_your_api_key@api.fire-platform.io', [
+  'sales',
+  'dev',
+  'ops',
+  'email',
+]);
 
 // Fixed channels (no placeholders)
 fire.add('discord://sales-webhook/token', ['sales']);
@@ -171,6 +280,13 @@ await fire.send(
 import { FireSignal } from 'fire-signal';
 
 const fire = new FireSignal();
+
+fire.add('fire://fp_live_your_api_key@api.fire-platform.io', [
+  'warehouse',
+  'finance',
+  'support',
+  'customer',
+]);
 
 // Internal channels (fixed)
 fire.add('rocketchat://chat.company.com/webhookToken', ['warehouse']);
@@ -283,6 +399,10 @@ npx fire-signal -t "🔄 Backup" -b "$(date)" "$NTFY_URL"
 import { FireSignal } from 'fire-signal';
 
 const fire = new FireSignal();
+fire.add('fire://fp_live_your_api_key@api.fire-platform.io', [
+  'build',
+  'release',
+]);
 fire.add('discord://devops-webhook/token', ['build']);
 fire.add('tgram://bot/releases-channel', ['release']);
 
@@ -306,6 +426,13 @@ import { FireSignal } from 'fire-signal';
 
 // Configure once at app startup
 const fire = new FireSignal();
+
+fire.add('fire://fp_live_your_api_key@api.fire-platform.io', [
+  'user',
+  'engineering',
+  'sales',
+  'support',
+]);
 
 // User notifications (transactional emails)
 fire.add('mailto://noreply%40saas.com:pass@smtp.saas.com?to={user_email}', [
@@ -398,6 +525,7 @@ import { orderTemplate } from './templates/order-confirmation';
 import { FireSignal } from 'fire-signal';
 
 const fire = new FireSignal();
+fire.add('fire://fp_live_your_api_key@api.fire-platform.io', ['customer']);
 fire.add('mailto://orders%40company.com:pass@smtp.gmail.com?to={email}', [
   'customer',
 ]);
@@ -442,6 +570,9 @@ export class FireService implements OnModuleInit {
   onModuleInit() {
     this.fire = new FireSignal();
 
+    // Fire Platform first
+    this.fire.add(process.env.FIRE_PLATFORM_URL!, ['user', 'team', 'critical']);
+
     // User notifications
     this.fire.add(process.env.SMTP_URL, ['user']);
 
@@ -477,6 +608,7 @@ import { FireSignal } from 'fire-signal';
 export const fire = new FireSignal();
 
 // Configure channels
+fire.add(process.env.FIRE_PLATFORM_URL!, ['internal', 'sales', 'user']);
 fire.add(process.env.DISCORD_WEBHOOK!, ['internal']);
 fire.add(process.env.ROCKET_CHAT_WEBHOOK!, ['internal', 'sales']);
 fire.add(process.env.SMTP_URL!, ['user']);
@@ -573,6 +705,7 @@ import { FireSignal } from 'fire-signal';
 
 const fire = new FireSignal({
   urls: [
+    'fire://fp_live_your_api_key@api.fire-platform.io',
     'mailto://user:pass@smtp.gmail.com?to=team@company.com',
     'discord://webhookId/webhookToken',
     'tgram://botToken/chatId',
@@ -619,6 +752,7 @@ await fire.send({
 
 | Provider        | Scheme                      | Auth         | Attachments | Formatting     | Limitations     | Example                          |
 | --------------- | --------------------------- | ------------ | ----------- | -------------- | --------------- | -------------------------------- |
+| **Fire Platform** | `fire://`                 | API Key      | ❌          | Managed by Platform | Requires Fire Platform account | `fire://fp_live_your_api_key@api.fire-platform.io` |
 | **Discord**     | `discord://`                | Webhook URL  | ✅ Full     | Markdown       | 2000 char limit | `discord://webhookId/token`      |
 | **Telegram**    | `tgram://` `telegram://`    | Bot Token    | ✅ Full     | Markdown/HTML  | 4096 char limit | `tgram://botToken/chatId`        |
 | **Rocket.Chat** | `rocketchat://` `rocket://` | Webhook      | ❌          | Markdown       | -               | `rocketchat://host/token`        |
@@ -716,11 +850,14 @@ const fire = new FireSignal({
   },
 });
 
-fire.add('rocketchat://main-server/webhook', ['main']);
+fire.add('fire://fp_live_your_api_key@api.fire-platform.io', ['main']);
 fire.add('tgram://bot/monitoring-chat', ['monitoring']);
 
-// If RocketChat fails, Telegram receives the error notification
-await fire.send({ title: 'Alert', body: 'Message' }, { tags: ['main'] });
+// If fire:// fails, Telegram receives the fallback error notification
+await fire.send(
+  { title: 'Alert', body: 'Message' },
+  { tags: ['main'], audience: ['ops', 'oncall'] }
+);
 ```
 
 **Error Messages:** Fire-Signal provides human-readable HTTP error messages:
@@ -1458,6 +1595,10 @@ Create `~/.fire-signal.yml`:
 
 ```yaml
 urls:
+  # Fire Platform first
+  - url: 'fire://fp_live_your_api_key@api.fire-platform.io'
+    tags: ['sales', 'management', 'dev', 'ops', 'critical']
+
   # Sales team
   - url: 'discord://sales-webhook/token'
     tags: ['sales']
@@ -1494,8 +1635,8 @@ await fire.send({ body: 'Server down!' }, { tags: ['critical'] });
 ## 🌍 Environment Variables
 
 ```bash
-# Space or comma separated URLs
-FIRE_SIGNAL_URLS="discord://... tgram://... slack://..."
+# Space or comma separated URLs (fire:// first)
+FIRE_SIGNAL_URLS="fire://fp_live_your_api_key@api.fire-platform.io discord://... tgram://... slack://..."
 
 # Additional config file paths
 FIRE_SIGNAL_CONFIG_PATH="/etc/fire-signal.yml:~/.fire-signal.yml"
@@ -1551,6 +1692,7 @@ Options:
   -b, --body <body>        Notification body (or pipe from stdin)
   -g, --tag <tags...>      Filter by tags
   --tags <tags>            Alias for -g/--tag
+  -a, --audience <labels...>  Fire Platform audience labels
   -c, --config <paths...>  Additional config paths
   -v, --verbose            Debug output
   -q, --quiet              Errors only
@@ -1564,11 +1706,11 @@ Options:
 Examples:
 
 ```bash
-# Direct
-fire-signal -t "Deploy" -b "Done" discord://id/token
+# Direct (Fire Platform)
+fire-signal -t "Deploy" -b "Done" fire://fp_live_your_api_key@api.fire-platform.io
 
 # From env
-export FIRE_SIGNAL_URLS="discord://id/token tgram://bot/chat"
+export FIRE_SIGNAL_URLS="fire://fp_live_your_api_key@api.fire-platform.io discord://id/token tgram://bot/chat"
 fire-signal -t "Alert" -b "Check logs"
 
 # Pipe
@@ -1576,6 +1718,16 @@ echo "Build completed" | fire-signal -t "CI"
 
 # Tags (from config)
 fire-signal -t "Critical" -b "Error" -g critical
+
+# Fire Platform audience filter
+fire-signal -t "Security" -b "Suspicious login" \
+  -a security,oncall \
+  fire://fp_live_your_api_key@api.fire-platform.io
+
+# Fire Platform segment targeting
+fire-signal -t "Release" -b "v3.2.0 shipped" \
+  --segment-id seg_01JXABCDEF123456 \
+  fire://fp_live_your_api_key@api.fire-platform.io
 
 # Dry run (preview without sending)
 fire-signal --dry-run -t "Test" -b "Body" ntfy://ntfy.sh/test
@@ -1783,7 +1935,7 @@ try {
 
 ```typescript
 const fire = new FireSignal({
-  // Destinations to send to (e.g. ['discord://webhook', 'slack://token'])
+  // Destinations to send to (e.g. ['fire://key@api.fire-platform.io', 'discord://webhook'])
   urls?: string[];
 
   // Custom logic (only if you created a custom provider class)
@@ -1815,7 +1967,15 @@ interface FSMessage {
 }
 
 interface SendOptions {
+  // Fire-Signal routing tags (selects URLs/providers)
   tags?: string[];
+
+  // Fire Platform channel filter (only used by fire:// provider)
+  audience?: string[];
+
+  // Fire Platform segment targeting (only used by fire:// provider)
+  segmentId?: string;
+
   params?: Record<string, string>;
 }
 

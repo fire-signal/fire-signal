@@ -244,6 +244,42 @@ describe('FireSignal', () => {
       expect(results).toHaveLength(1);
       expect(results[0].success).toBe(false);
     });
+
+    it('should forward templateKey to provider context', async () => {
+      const sendSpy = vi.fn(async () => ({
+        success: true,
+        providerId: 'custom-template',
+      }));
+
+      const customProvider: FSProvider = {
+        id: 'custom-template',
+        schemas: ['ctpl'],
+        parseUrl: (url) => ({
+          schema: 'ctpl',
+          raw: url,
+          segments: [],
+          params: {},
+        }),
+        send: sendSpy,
+      };
+
+      const fire = new FireSignal({
+        logLevel: 'silent',
+        providers: [customProvider],
+        skipDefaultProviders: true,
+      });
+      fire.add('ctpl://notify');
+
+      await fire.send(
+        { title: 'Welcome', body: 'Placeholder body' },
+        { templateKey: 'welcome_user' }
+      );
+
+      expect(sendSpy).toHaveBeenCalledWith(
+        expect.any(Object),
+        expect.objectContaining({ templateKey: 'welcome_user' })
+      );
+    });
   });
 
   describe('onError handling', () => {

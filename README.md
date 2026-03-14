@@ -151,6 +151,22 @@ await fire.send(
     audience: ['ops', 'payments'],
   }
 );
+
+// 5) Use a Fire Platform template by key
+await fire.send(
+  {
+    title: 'Placeholder title (kept for API compatibility)',
+    body: 'Placeholder body (Fire Platform resolves template content)',
+    metadata: {
+      user: { name: 'Alice' },
+      order: { id: 'ORD-1001', total: 249.9 },
+    },
+  },
+  {
+    templateKey: 'sales_welcome',
+    audience: ['sales'],
+  }
+);
 ```
 
 > `tags` and `audience` are different:
@@ -159,6 +175,7 @@ await fire.send(
 > - `audience`: sent only to Fire Platform (`fire://`) to filter channels
 >
 > Fire Platform also supports `segmentId` when you want explicit segment targeting.
+> Fire Platform also supports `templateKey` for server-side template rendering.
 
 `fire://` URL format:
 
@@ -1693,6 +1710,8 @@ Options:
   -g, --tag <tags...>      Filter by tags
   --tags <tags>            Alias for -g/--tag
   -a, --audience <labels...>  Fire Platform audience labels
+  --template-key <key>     Fire Platform template key
+  --segment-id <id>        Fire Platform segment ID
   -c, --config <paths...>  Additional config paths
   -v, --verbose            Debug output
   -q, --quiet              Errors only
@@ -1727,6 +1746,12 @@ fire-signal -t "Security" -b "Suspicious login" \
 # Fire Platform segment targeting
 fire-signal -t "Release" -b "v3.2.0 shipped" \
   --segment-id seg_01JXABCDEF123456 \
+  fire://fp_live_your_api_key@api.fire-platform.io
+
+# Fire Platform template targeting
+fire-signal -t "Invoice" -b "Fallback content" \
+  --template-key billing_invoice \
+  -a billing \
   fire://fp_live_your_api_key@api.fire-platform.io
 
 # Dry run (preview without sending)

@@ -34,6 +34,7 @@ export interface FSProviderContext {
   tags?: string[];
   audience?: string[];
   segmentId?: string;
+  templateKey?: string;
 }
 
 /**

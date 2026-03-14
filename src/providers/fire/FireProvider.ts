@@ -75,6 +75,7 @@ export class FireProvider extends BaseProvider {
           data: message.metadata,
           audience: ctx.audience,
           segmentId: ctx.segmentId,
+          templateKey: ctx.templateKey,
         }),
       });
 

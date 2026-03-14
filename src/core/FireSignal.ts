@@ -107,6 +107,11 @@ export interface SendOptions {
    */
   segmentId?: string;
   /**
+   * Fire Platform template key (forwarded only by FireProvider).
+   * Fire Platform resolves this key to the corresponding server-side template.
+   */
+  templateKey?: string;
+  /**
    * Parameters to replace placeholders in URLs.
    * Placeholders use {name} format and will be replaced with the corresponding value.
    * @example
@@ -454,6 +459,7 @@ export class FireSignal {
           tags: options.tags,
           audience: options.audience,
           segmentId: options.segmentId,
+          templateKey: options.templateKey,
         });
         results.push(result);
 
@@ -588,6 +594,7 @@ export class FireSignal {
           tags: options.tags,
           audience: options.audience,
           segmentId: options.segmentId,
+          templateKey: options.templateKey,
         });
         results.push(result);
       } catch (error) {

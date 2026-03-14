@@ -37,6 +37,10 @@ program
     'Audience labels for fire:// provider (comma or space separated)'
   )
   .option('--segment-id <id>', 'Fire Platform segment ID for fire:// provider')
+  .option(
+    '--template-key <key>',
+    'Fire Platform template key for fire:// provider'
+  )
   .option('-c, --config <paths...>', 'Additional config file paths')
   .option(
     '-l, --log-level <level>',
@@ -78,6 +82,7 @@ interface CLIOptions {
   tags?: string;
   audience?: string[];
   segmentId?: string;
+  templateKey?: string;
   config?: string[];
   logLevel?: string;
   verbose?: boolean;
@@ -223,6 +228,7 @@ async function runCLI(urls: string[], options: CLIOptions): Promise<void> {
     tags: tagList.length > 0 ? tagList : undefined,
     audience: audienceList.length > 0 ? audienceList : undefined,
     segmentId: options.segmentId,
+    templateKey: options.templateKey,
   });
   const totalDuration = Date.now() - startTime;
 

@@ -86,7 +86,7 @@ describe('FireProvider', () => {
     );
   });
 
-  it('should forward title, body, metadata, audience, and segmentId', async () => {
+  it('should forward title, body, metadata, audience, segmentId, and templateKey', async () => {
     const message = {
       title: 'Alert',
       body: 'Server down',
@@ -105,6 +105,7 @@ describe('FireProvider', () => {
       tags: ['critical', 'ops'],
       audience: ['critical', 'ops'],
       segmentId: 'seg-123',
+      templateKey: 'welcome_user',
     };
 
     await provider.send(message, context);
@@ -118,6 +119,7 @@ describe('FireProvider', () => {
       data: { severity: 'high', email: 'ops@example.com' },
       audience: ['critical', 'ops'],
       segmentId: 'seg-123',
+      templateKey: 'welcome_user',
     });
   });
 

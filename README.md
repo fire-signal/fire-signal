@@ -212,6 +212,20 @@ Use this as the single mental model when sending through `fire://`:
 - `templateKey` tells Fire Platform which server-side template to resolve
 - `metadata` carries template variables and provider-specific dynamic values
 
+#### `params` vs `metadata` vs `data`
+
+| Field | Where you set it | What it does | Forwarded to Fire Platform? |
+| --- | --- | --- | --- |
+| `options.params` | `fire.send(message, { params })` | Replaces `{placeholder}` in URLs added with `fire.add(...)` | No |
+| `message.metadata` | `fire.send({ ..., metadata })` | Message context for providers; in `fire://` it becomes Fire Platform `data` | Yes (`metadata -> data`) |
+| `data` | Fire Platform REST (`POST /v1/send`) | Dynamic values for template variables and provider placeholders inside Platform | N/A (already in Platform API) |
+
+Rules of thumb:
+
+- Using `fire://`: put dynamic values in `metadata`
+- Using direct provider URLs with placeholders (e.g. `mailto://...?to={email}`): use `options.params`
+- Mixing both in one send is valid: `params` resolves local URLs, `metadata` is sent to Fire Platform
+
 Template behavior with `templateKey`:
 
 - Fire Platform resolves the final message from the selected template
@@ -373,9 +387,9 @@ import { FireSignal } from 'fire-signal';
 
 // Configure once with placeholder
 const fire = new FireSignal();
-fire.add('fire://fp_live_your_api_key@api.fire-platform.io', ['user']);
+fire.add('fire://fp_live_your_api_key@api.fire-platform.io', ['platform']);
 fire.add('mailto://noreply%40myapp.com:password@smtp.myapp.com?to={email}', [
-  'user',
+  'email',
 ]);
 
 async function onUserSignup(user: User) {
@@ -383,8 +397,16 @@ async function onUserSignup(user: User) {
     {
       title: 'Welcome to MyApp!',
       body: `Hi ${user.name}, thanks for signing up.`,
+      metadata: {
+        userId: user.id,
+        email: user.email,
+      },
     },
-    { tags: ['user'], params: { email: user.email } }
+    {
+      tags: ['platform', 'email'],
+      audience: ['customers'],
+      params: { email: user.email },
+    }
   );
 }
 ```
@@ -959,21 +981,28 @@ fire.add('gotifys://gotify.example.com/token?priority=8');
 
 ### Dynamic Placeholders
 
-Use `{key}` placeholders that get replaced by values from `data`:
+Use `{key}` placeholders that get replaced by values from `options.params`:
 
 ```typescript
 fire.add('ntfy://ntfy.sh/alerts?tags={severity}');
 fire.add('pover://user@token/?sound={alert_sound}');
 
-fire.send({
-  title: 'Server Alert',
-  body: 'CPU usage exceeded 90%',
-  data: {
-    severity: 'urgent,server',
-    alert_sound: 'siren',
+await fire.send(
+  {
+    title: 'Server Alert',
+    body: 'CPU usage exceeded 90%',
   },
-});
+  {
+    params: {
+      severity: 'urgent,server',
+      alert_sound: 'siren',
+    },
+  }
+);
 ```
+
+When sending through `fire://`, put these dynamic values in `metadata` instead,
+because Fire Provider forwards `metadata` to Fire Platform as `data`.
 
 Placeholders work in any part of the URL: path segments, query param values,
 etc.

@@ -1888,9 +1888,10 @@ fire-signal -t "Title" -b "Body" [urls...]
 Options:
   -t, --title <title>      Notification title
   -b, --body <body>        Notification body (or pipe from stdin)
+  -u, --url <url>          Provider URL (repeatable)
   -g, --tag <tags...>      Filter by tags
   --tags <tags>            Alias for -g/--tag
-  -a, --audience <labels...>  Fire Platform audience labels
+  -a, --audience <labels>  Fire Platform audience labels (comma or space separated)
   --template-key <key>     Fire Platform template key
   --segment-id <id>        Fire Platform segment ID
   -c, --config <paths...>  Additional config paths
@@ -1922,7 +1923,12 @@ fire-signal -t "Critical" -b "Error" -g critical
 # Fire Platform audience filter
 fire-signal -t "Security" -b "Suspicious login" \
   -a security,oncall \
-  fire://fp_live_your_api_key@api.fire-platform.io
+  -u fire://fp_live_your_api_key@api.fire-platform.io
+
+# Multiple providers with explicit URL flags
+fire-signal -t "Deploy" -b "Done" \
+  -u fire://fp_live_your_api_key@api.fire-platform.io \
+  -u ntfy://ntfy.sh/deploy
 
 # Fire Platform segment targeting
 fire-signal -t "Release" -b "v3.2.0 shipped" \

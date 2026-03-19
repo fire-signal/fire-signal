@@ -4,6 +4,7 @@
  *
  * Usage:
  *   fire-signal -t "Title" -b "Body" <urls...>
+ *   fire-signal -u ntfy://topic -u fire://key@api.fire-signal.com -t "Title" -b "Body"
  *   fire-signal -g tag1,tag2 -c /path/config.yml
  *   echo "Body" | fire-signal -t "Title"
  *   fire-signal --dry-run -t "Test" -b "Message" ntfy://...
@@ -33,8 +34,17 @@ program
   )
   .option('--tags <tags>', 'Alias for -g/--tag')
   .option(
-    '-a, --audience <labels...>',
-    'Audience labels for fire:// provider (comma or space separated)'
+    '-a, --audience <labels>',
+    'Audience labels for fire:// provider (comma or space separated)',
+    (value: string, previous: string[] = []) =>
+      previous.concat(value.split(/[\s,]+/).filter(Boolean)),
+    []
+  )
+  .option(
+    '-u, --url <url>',
+    'Provider URL (repeatable). Example: -u fire://... -u ntfy://...',
+    (value: string, previous: string[] = []) => previous.concat(value),
+    []
   )
   .option('--segment-id <id>', 'Fire Platform segment ID for fire:// provider')
   .option(
@@ -78,6 +88,7 @@ program
 interface CLIOptions {
   title?: string;
   body?: string;
+  url?: string[];
   tag?: string[];
   tags?: string;
   audience?: string[];
@@ -152,7 +163,12 @@ async function runCLI(urls: string[], options: CLIOptions): Promise<void> {
   const envUrls = loadUrlsFromEnv();
 
   // Combine all URLs: CLI args > ENV > config
-  const allUrls = [...urls, ...envUrls, ...config.entries.map((e) => e.url)];
+  const allUrls = [
+    ...(options.url ?? []),
+    ...urls,
+    ...envUrls,
+    ...config.entries.map((e) => e.url),
+  ];
 
   // Parse tags (combine -g/--tag and --tags)
   const tagList = [
@@ -160,10 +176,7 @@ async function runCLI(urls: string[], options: CLIOptions): Promise<void> {
     ...(options.tags?.split(/[,\s]+/).filter(Boolean) ?? []),
   ];
 
-  const audienceList =
-    options.audience?.flatMap((label) =>
-      label.split(/[,\s]+/).filter(Boolean)
-    ) ?? [];
+  const audienceList = options.audience ?? [];
 
   // Handle --validate option
   if (options.validate) {

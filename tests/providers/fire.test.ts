@@ -29,14 +29,14 @@ describe('FireProvider', () => {
   it('should send to Fire Platform with HTTPS (production)', async () => {
     const message = { body: 'Test notification' };
     const context = {
-      url: 'fire://fp_live_abc123@api.fire-platform.io',
+      url: 'fire://fp_live_abc123@api.fire-signal.com',
       parsed: {
         schema: 'fire',
-        hostname: 'api.fire-platform.io',
+        hostname: 'api.fire-signal.com',
         username: 'fp_live_abc123',
         params: {},
         segments: [],
-        raw: 'fire://fp_live_abc123@api.fire-platform.io',
+        raw: 'fire://fp_live_abc123@api.fire-signal.com',
       },
       tags: ['production'],
       audience: ['production'],
@@ -48,7 +48,7 @@ describe('FireProvider', () => {
     expect(result.success).toBe(true);
     expect(result.providerId).toBe('fire');
     expect(global.fetch).toHaveBeenCalledWith(
-      'https://api.fire-platform.io/v1/send',
+      'https://api.fire-signal.com/v1/send',
       expect.objectContaining({
         method: 'POST',
         headers: {
@@ -93,14 +93,14 @@ describe('FireProvider', () => {
       metadata: { severity: 'high', email: 'ops@example.com' },
     };
     const context = {
-      url: 'fire://fp_live_abc@api.fire-platform.io',
+      url: 'fire://fp_live_abc@api.fire-signal.com',
       parsed: {
         schema: 'fire',
-        hostname: 'api.fire-platform.io',
+        hostname: 'api.fire-signal.com',
         username: 'fp_live_abc',
         params: {},
         segments: [],
-        raw: 'fire://fp_live_abc@api.fire-platform.io',
+        raw: 'fire://fp_live_abc@api.fire-signal.com',
       },
       tags: ['critical', 'ops'],
       audience: ['critical', 'ops'],
@@ -126,14 +126,14 @@ describe('FireProvider', () => {
   it('should fail if API key is missing', async () => {
     const message = { body: 'Test' };
     const context = {
-      url: 'fire://api.fire-platform.io',
+      url: 'fire://api.fire-signal.com',
       parsed: {
         schema: 'fire',
-        hostname: 'api.fire-platform.io',
+        hostname: 'api.fire-signal.com',
         username: undefined, // No API key
         params: {},
         segments: [],
-        raw: 'fire://api.fire-platform.io',
+        raw: 'fire://api.fire-signal.com',
       },
       tags: [],
       audience: [],
@@ -158,14 +158,14 @@ describe('FireProvider', () => {
 
     const message = { body: 'Test' };
     const context = {
-      url: 'fire://fp_invalid@api.fire-platform.io',
+      url: 'fire://fp_invalid@api.fire-signal.com',
       parsed: {
         schema: 'fire',
-        hostname: 'api.fire-platform.io',
+        hostname: 'api.fire-signal.com',
         username: 'fp_invalid',
         params: {},
         segments: [],
-        raw: 'fire://fp_invalid@api.fire-platform.io',
+        raw: 'fire://fp_invalid@api.fire-signal.com',
       },
       tags: [],
       audience: [],
@@ -183,14 +183,14 @@ describe('FireProvider', () => {
 
     const message = { body: 'Test' };
     const context = {
-      url: 'fire://fp_live_abc@api.fire-platform.io',
+      url: 'fire://fp_live_abc@api.fire-signal.com',
       parsed: {
         schema: 'fire',
-        hostname: 'api.fire-platform.io',
+        hostname: 'api.fire-signal.com',
         username: 'fp_live_abc',
         params: {},
         segments: [],
-        raw: 'fire://fp_live_abc@api.fire-platform.io',
+        raw: 'fire://fp_live_abc@api.fire-signal.com',
       },
       tags: [],
       audience: [],

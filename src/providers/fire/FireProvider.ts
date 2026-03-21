@@ -13,7 +13,7 @@ import type { FSMessage } from '../../core/Message';
  *
  * @example
  * ```typescript
- * fire.add('fire://fp_live_xyz123@api.fire-platform.io');
+ * fire.add('fire://fp_live_xyz123@api.fire-signal.com');
  * ```
  */
 export class FireProvider extends BaseProvider {
@@ -48,7 +48,7 @@ export class FireProvider extends BaseProvider {
     if (!hostname) {
       return this.failure(
         new Error(
-          'Invalid fire:// URL: missing host. Use fire://<api_key>@api.fire-platform.io'
+          'Invalid fire:// URL: missing host. Use fire://<api_key>@api.fire-signal.com'
         )
       );
     }

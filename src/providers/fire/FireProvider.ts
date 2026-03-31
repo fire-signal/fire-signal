@@ -20,15 +20,36 @@ export class FireProvider extends BaseProvider {
   readonly id = 'fire';
   readonly schemas = ['fire'];
 
+  static readonly DEFAULT_HOST = 'api.fire-signal.com';
+
   parseUrl(raw: string) {
+    const tokenOnlyMatch = raw.match(/^fire:\/\/([^@/?#]+)$/i);
+
+    if (tokenOnlyMatch) {
+      const apiKey = tokenOnlyMatch[1];
+      return {
+        schema: 'fire',
+        hostname: FireProvider.DEFAULT_HOST,
+        port: undefined,
+        username: apiKey,
+        password: undefined,
+        path: '',
+        params: {},
+        segments: [],
+        raw,
+      };
+    }
+
     const url = new URL(raw);
+    const hostname = url.hostname || FireProvider.DEFAULT_HOST;
+
     return {
       schema: 'fire',
-      hostname: url.hostname,
+      hostname,
       port: url.port ? parseInt(url.port, 10) : undefined,
       username: url.username || undefined,
       password: undefined,
-      pathname: url.pathname,
+      path: url.pathname,
       params: {},
       segments: [],
       raw,

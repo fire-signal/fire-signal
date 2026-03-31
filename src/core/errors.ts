@@ -129,6 +129,27 @@ export class FSNetworkError extends FSError {
 }
 
 /**
+ * Error thrown when platform ingestion/evaluate request fails.
+ */
+export class FSPlatformError extends FSError {
+  constructor(
+    message: string,
+    public readonly category:
+      | 'auth'
+      | 'validation'
+      | 'transient'
+      | 'network'
+      | 'configuration',
+    public readonly statusCode?: number,
+    public readonly retryable: boolean = false,
+    public readonly details?: string
+  ) {
+    super(message, 'PLATFORM_ERROR');
+    this.name = 'FSPlatformError';
+  }
+}
+
+/**
  * Circuit breaker states.
  */
 export enum CircuitState {

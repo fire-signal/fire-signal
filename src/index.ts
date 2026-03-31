@@ -8,6 +8,7 @@ export {
   FSValidationError,
   FSCredentialsError,
   FSNetworkError,
+  FSPlatformError,
 } from './core/errors';
 export {
   validateFSUrl,
@@ -20,7 +21,16 @@ export type {
   ValidationWarning,
 } from './core/UrlValidator';
 
-export type { FireSignalOptions, SendOptions } from './core/FireSignal';
+export type {
+  FireSignalOptions,
+  SendOptions,
+  PlatformCallOptions,
+  TrackPayload,
+  IdentifyTraits,
+  IncidentReportPayload,
+  FlagsContext,
+  FlagDecision,
+} from './core/FireSignal';
 export type { FSMessage, FSAttachment, FSAction } from './core/Message';
 export { TemplateManager } from './core/templates';
 export type { FSTemplate } from './core/templates';

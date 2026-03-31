@@ -26,6 +26,12 @@ describe('FireProvider', () => {
     expect(provider.schemas).toEqual(['fire']);
   });
 
+  it('should parse fire://token using default host', () => {
+    const parsed = provider.parseUrl('fire://fp_live_onlytoken');
+    expect(parsed.username).toBe('fp_live_onlytoken');
+    expect(parsed.hostname).toBe('api.fire-signal.com');
+  });
+
   it('should send to Fire Platform with HTTPS (production)', async () => {
     const message = { body: 'Test notification' };
     const context = {

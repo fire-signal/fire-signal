@@ -525,4 +525,180 @@ describe('FireSignal', () => {
       ).resolves.toBeUndefined();
     });
   });
+
+  describe('platform APIs', () => {
+    it('should track using fire://token default host', async () => {
+      const fire = new FireSignal({ logLevel: 'silent' });
+      fire.add('fire://fp_live_sdktoken');
+
+      const ok = await fire.track('checkout.started', {
+        user: { id: 'user_123' },
+        plan: 'PLUS',
+      });
+
+      expect(ok).toBe(true);
+      expect(global.fetch).toHaveBeenCalledWith(
+        'https://api.fire-signal.com/v1/events/track',
+        expect.objectContaining({
+          method: 'POST',
+          headers: expect.objectContaining({
+            Authorization: 'Bearer fp_live_sdktoken',
+          }),
+        })
+      );
+
+      const body = JSON.parse((global.fetch as any).mock.calls[0][1].body);
+      expect(body).toEqual(
+        expect.objectContaining({
+          eventName: 'checkout.started',
+          user: { id: 'user_123' },
+          properties: { plan: 'PLUS' },
+        })
+      );
+    });
+
+    it('should identify customer via platform endpoint', async () => {
+      const fire = new FireSignal({ logLevel: 'silent' });
+      fire.add('fire://fp_live_token@api.fire-signal.com');
+
+      const ok = await fire.identify('user_123', {
+        email: 'ana@acme.com',
+        plan: 'FREE',
+      });
+
+      expect(ok).toBe(true);
+      expect(global.fetch).toHaveBeenCalledWith(
+        'https://api.fire-signal.com/v1/customers/identify',
+        expect.any(Object)
+      );
+    });
+
+    it('should report incident via incident.report API', async () => {
+      const fire = new FireSignal({ logLevel: 'silent' });
+      fire.add('fire://fp_live_token@api.fire-signal.com');
+
+      const ok = await fire.incident.report({
+        code: 'payment_gateway_timeout',
+        fingerprint: 'checkout:payment:timeout',
+        severity: 'P1',
+        message: 'Provider timeout',
+      });
+
+      expect(ok).toBe(true);
+      expect(global.fetch).toHaveBeenCalledWith(
+        'https://api.fire-signal.com/v1/incidents/report',
+        expect.any(Object)
+      );
+    });
+
+    it('should evaluate flags and return business value', async () => {
+      mockGlobalFetch({
+        response: {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            results: {
+              'checkout.promocode': {
+                enabled: true,
+                variant: 'promo_30',
+                value: '30OFF',
+                reason: 'rule_match',
+              },
+            },
+          }),
+        },
+      });
+
+      const fire = new FireSignal({ logLevel: 'silent' });
+      fire.add('fire://fp_live_token@api.fire-signal.com');
+
+      const decision = await fire.flags.evaluate<string>('checkout.promocode', {
+        user: { id: 'user_123' },
+      });
+      const enabled = await fire.flags.isEnabled('checkout.promocode', {
+        user: { id: 'user_123' },
+      });
+      const value = await fire.flags.getVariantValue<string>('checkout.promocode', {
+        user: { id: 'user_123' },
+      });
+
+      expect(decision.enabled).toBe(true);
+      expect(decision.value).toBe('30OFF');
+      expect(enabled).toBe(true);
+      expect(value).toBe('30OFF');
+    });
+
+    it('should warn and no-op without fire:// provider (default)', async () => {
+      const logger = vi.fn();
+      const fire = new FireSignal({ logger });
+
+      const ok = await fire.track('checkout.started', { plan: 'PLUS' });
+      expect(ok).toBe(true);
+      expect(logger).toHaveBeenCalledWith(
+        expect.stringContaining('Fire Platform provider not configured'),
+        'warn'
+      );
+    });
+
+    it('should throw without fire:// provider in strict mode', async () => {
+      const fire = new FireSignal({ strictPlatformProvider: true });
+
+      await expect(
+        fire.track('checkout.started', { plan: 'PLUS' })
+      ).rejects.toThrow('Fire Platform provider not configured');
+    });
+
+    it('should auto flush queued track on beforeExit when enabled', async () => {
+      const fire = new FireSignal({
+        logLevel: 'silent',
+        trackBatch: {
+          enabled: true,
+          flushIntervalMs: 60_000,
+          maxBatchSize: 50,
+          autoFlushOnExit: true,
+          flushOnExitTimeoutMs: 1000,
+        },
+      });
+      fire.add('fire://fp_live_sdktoken');
+
+      const pending = fire.track('checkout.started', {
+        user: { id: 'user_123' },
+      });
+
+      expect(global.fetch).not.toHaveBeenCalled();
+
+      process.emit('beforeExit', 0);
+
+      await expect(pending).resolves.toBe(true);
+      await fire.dispose();
+    });
+
+    it('should flush queue and unregister handlers on dispose', async () => {
+      const beforeExitCount = process.listenerCount('beforeExit');
+      const sigintCount = process.listenerCount('SIGINT');
+      const sigtermCount = process.listenerCount('SIGTERM');
+
+      const fire = new FireSignal({
+        logLevel: 'silent',
+        trackBatch: {
+          enabled: true,
+          flushIntervalMs: 60_000,
+          maxBatchSize: 50,
+          autoFlushOnExit: true,
+        },
+      });
+      fire.add('fire://fp_live_sdktoken');
+
+      const pending = fire.track('checkout.started', {
+        user: { id: 'user_123' },
+      });
+
+      await fire.dispose();
+      await expect(pending).resolves.toBe(true);
+
+      expect(process.listenerCount('beforeExit')).toBe(beforeExitCount);
+      expect(process.listenerCount('SIGINT')).toBe(sigintCount);
+      expect(process.listenerCount('SIGTERM')).toBe(sigtermCount);
+    });
+  });
 });

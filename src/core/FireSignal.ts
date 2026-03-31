@@ -1,7 +1,11 @@
 import type { FSMessage } from './Message';
 import { TemplateManager } from './templates';
 import { ResilienceManager, ResilienceConfig } from './resilience';
-import { FSProviderNotFoundError, ResilienceError } from './errors';
+import {
+  FSPlatformError,
+  FSProviderNotFoundError,
+  ResilienceError,
+} from './errors';
 import type { FSProvider, FSProviderResult } from '../providers/base/Provider';
 import { createDefaultProviders } from '../providers';
 import { loadFSConfig, FSConfigEntry } from '../config/ConfigLoader';
@@ -13,6 +17,7 @@ import {
   silentLogger,
   createConsoleLogger,
 } from '../utils/logger';
+import { FireProvider } from '../providers/fire/FireProvider';
 
 /**
  * Context passed to onError handlers.
@@ -88,6 +93,28 @@ export interface FireSignalOptions {
    * @default 'enabled'
    */
   mode?: 'enabled' | 'disabled' | 'dryRun';
+
+  /**
+   * When true, platform-only APIs throw if fire:// provider is not configured.
+   * When false (default), they warn and no-op.
+   */
+  strictPlatformProvider?: boolean;
+
+  /** Request timeout for platform ingestion/evaluate API calls. */
+  platformTimeoutMs?: number;
+
+  /** Max retries for transient platform request failures. */
+  platformMaxRetries?: number;
+
+  /** Track batching configuration. */
+  trackBatch?: {
+    enabled?: boolean;
+    flushIntervalMs?: number;
+    maxBatchSize?: number;
+    maxQueueSize?: number;
+    autoFlushOnExit?: boolean;
+    flushOnExitTimeoutMs?: number;
+  };
 }
 
 /**
@@ -122,6 +149,56 @@ export interface SendOptions {
    */
   params?: Record<string, string>;
 }
+
+export interface PlatformCallOptions {
+  tags?: string[];
+  params?: Record<string, string>;
+}
+
+export interface TrackPayload {
+  occurredAt?: string;
+  user?: { id: string };
+  company?: { id: string };
+  properties?: Record<string, unknown>;
+  [key: string]: unknown;
+}
+
+export interface IdentifyTraits {
+  [key: string]: unknown;
+}
+
+export interface IncidentReportPayload {
+  title?: string;
+  code: string;
+  fingerprint: string;
+  severity: 'P1' | 'P2' | 'P3' | 'P4';
+  message?: string;
+  metadata?: Record<string, unknown>;
+  occurredAt?: string;
+}
+
+export interface FlagsContext {
+  user?: { id: string };
+  company?: { id: string };
+  traits?: Record<string, unknown>;
+}
+
+export interface FlagDecision<T = unknown> {
+  key: string;
+  enabled: boolean;
+  variantKey?: string;
+  value?: T;
+  reason?: string;
+  fetchedAt: string;
+}
+
+type TrackQueueItem = {
+  eventName: string;
+  payload: TrackPayload;
+  options: PlatformCallOptions;
+  resolve: (value: boolean) => void;
+  reject: (error: Error) => void;
+};
 
 /**
  * Replaces placeholders in a URL with values from params.
@@ -162,6 +239,53 @@ export class FireSignal {
   private templateManager: TemplateManager = new TemplateManager();
   private resilienceManager?: ResilienceManager;
   private mode: 'enabled' | 'disabled' | 'dryRun' = 'enabled';
+  private strictPlatformProvider = false;
+  private platformTimeoutMs = 5000;
+  private platformMaxRetries = 2;
+  private trackBatchEnabled = true;
+  private trackBatchFlushIntervalMs = 1000;
+  private trackBatchMaxBatchSize = 50;
+  private trackBatchMaxQueueSize = 1000;
+  private trackBatchAutoFlushOnExit = false;
+  private trackBatchFlushOnExitTimeoutMs = 1500;
+  private trackQueue: TrackQueueItem[] = [];
+  private trackFlushTimer: ReturnType<typeof setTimeout> | null = null;
+  private trackExitHandlersRegistered = false;
+  private trackExitInProgress = false;
+  private beforeExitHandler?: () => void;
+  private sigintHandler?: () => void;
+  private sigtermHandler?: () => void;
+
+  readonly incident = {
+    report: async (
+      payload: IncidentReportPayload,
+      options: PlatformCallOptions = {}
+    ): Promise<boolean> => this.reportIncident(payload, options),
+  };
+
+  readonly flags = {
+    evaluate: async <T = unknown>(
+      key: string,
+      context: FlagsContext = {},
+      options: PlatformCallOptions = {}
+    ): Promise<FlagDecision<T>> => this.evaluateFlag<T>(key, context, options),
+    isEnabled: async (
+      key: string,
+      context: FlagsContext = {},
+      options: PlatformCallOptions = {}
+    ): Promise<boolean> => {
+      const decision = await this.evaluateFlag(key, context, options);
+      return !!decision.enabled;
+    },
+    getVariantValue: async <T = unknown>(
+      key: string,
+      context: FlagsContext = {},
+      options: PlatformCallOptions = {}
+    ): Promise<T | undefined> => {
+      const decision = await this.evaluateFlag<T>(key, context, options);
+      return decision.value;
+    },
+  };
 
   constructor(options: FireSignalOptions = {}) {
     // Set up logger: custom logger takes precedence, then logLevel, then silent
@@ -196,6 +320,55 @@ export class FireSignal {
 
     if (options.mode) {
       this.mode = options.mode;
+    }
+
+    if (typeof options.strictPlatformProvider === 'boolean') {
+      this.strictPlatformProvider = options.strictPlatformProvider;
+    }
+
+    if (typeof options.platformTimeoutMs === 'number') {
+      this.platformTimeoutMs = options.platformTimeoutMs;
+    }
+
+    if (typeof options.platformMaxRetries === 'number') {
+      this.platformMaxRetries = Math.max(0, options.platformMaxRetries);
+    }
+
+    if (options.trackBatch) {
+      if (typeof options.trackBatch.enabled === 'boolean') {
+        this.trackBatchEnabled = options.trackBatch.enabled;
+      }
+      if (typeof options.trackBatch.flushIntervalMs === 'number') {
+        this.trackBatchFlushIntervalMs = Math.max(
+          100,
+          options.trackBatch.flushIntervalMs
+        );
+      }
+      if (typeof options.trackBatch.maxBatchSize === 'number') {
+        this.trackBatchMaxBatchSize = Math.max(
+          1,
+          options.trackBatch.maxBatchSize
+        );
+      }
+      if (typeof options.trackBatch.maxQueueSize === 'number') {
+        this.trackBatchMaxQueueSize = Math.max(
+          1,
+          options.trackBatch.maxQueueSize
+        );
+      }
+      if (typeof options.trackBatch.autoFlushOnExit === 'boolean') {
+        this.trackBatchAutoFlushOnExit = options.trackBatch.autoFlushOnExit;
+      }
+      if (typeof options.trackBatch.flushOnExitTimeoutMs === 'number') {
+        this.trackBatchFlushOnExitTimeoutMs = Math.max(
+          100,
+          options.trackBatch.flushOnExitTimeoutMs
+        );
+      }
+    }
+
+    if (this.trackBatchEnabled && this.trackBatchAutoFlushOnExit) {
+      this.registerTrackExitHandlers();
     }
   }
 
@@ -496,6 +669,467 @@ export class FireSignal {
     }
 
     return results;
+  }
+
+  async track(
+    eventName: string,
+    payload: TrackPayload = {},
+    options: PlatformCallOptions = {}
+  ): Promise<boolean> {
+    if (!eventName?.trim()) {
+      throw new FSPlatformError(
+        'eventName is required',
+        'validation',
+        422,
+        false
+      );
+    }
+
+    if (!this.trackBatchEnabled) {
+      const body = this.normalizeTrackPayload(eventName.trim(), payload);
+      await this.platformPost('/v1/events/track', body, options);
+      return true;
+    }
+
+    return this.enqueueTrack(eventName.trim(), payload, options);
+  }
+
+  async flush(): Promise<void> {
+    await this.flushTrackQueue();
+  }
+
+  async dispose(): Promise<void> {
+    await this.flush();
+    this.unregisterTrackExitHandlers();
+  }
+
+  private enqueueTrack(
+    eventName: string,
+    payload: TrackPayload,
+    options: PlatformCallOptions
+  ): Promise<boolean> {
+    if (this.trackQueue.length >= this.trackBatchMaxQueueSize) {
+      return Promise.reject(
+        new FSPlatformError(
+          'Track queue is full',
+          'configuration',
+          undefined,
+          false
+        )
+      );
+    }
+
+    return new Promise<boolean>((resolve, reject) => {
+      this.trackQueue.push({
+        eventName,
+        payload,
+        options,
+        resolve,
+        reject,
+      });
+
+      if (this.trackQueue.length >= this.trackBatchMaxBatchSize) {
+        void this.flushTrackQueue();
+        return;
+      }
+
+      if (!this.trackFlushTimer) {
+        this.trackFlushTimer = setTimeout(() => {
+          this.trackFlushTimer = null;
+          void this.flushTrackQueue();
+        }, this.trackBatchFlushIntervalMs);
+        if (typeof this.trackFlushTimer.unref === 'function') {
+          this.trackFlushTimer.unref();
+        }
+      }
+    });
+  }
+
+  private registerTrackExitHandlers(): void {
+    if (this.trackExitHandlersRegistered) return;
+    if (typeof process === 'undefined' || typeof process.on !== 'function')
+      return;
+
+    this.beforeExitHandler = () => {
+      void this.flushTrackQueueWithTimeout(this.trackBatchFlushOnExitTimeoutMs);
+    };
+
+    this.sigintHandler = () => {
+      void this.handleTrackSignalExit(130);
+    };
+
+    this.sigtermHandler = () => {
+      void this.handleTrackSignalExit(143);
+    };
+
+    process.on('beforeExit', this.beforeExitHandler);
+    process.on('SIGINT', this.sigintHandler);
+    process.on('SIGTERM', this.sigtermHandler);
+    this.trackExitHandlersRegistered = true;
+  }
+
+  private unregisterTrackExitHandlers(): void {
+    if (!this.trackExitHandlersRegistered) return;
+    if (typeof process === 'undefined' || typeof process.off !== 'function')
+      return;
+
+    if (this.beforeExitHandler)
+      process.off('beforeExit', this.beforeExitHandler);
+    if (this.sigintHandler) process.off('SIGINT', this.sigintHandler);
+    if (this.sigtermHandler) process.off('SIGTERM', this.sigtermHandler);
+
+    this.beforeExitHandler = undefined;
+    this.sigintHandler = undefined;
+    this.sigtermHandler = undefined;
+    this.trackExitHandlersRegistered = false;
+  }
+
+  private async handleTrackSignalExit(code: number): Promise<void> {
+    if (this.trackExitInProgress) return;
+    this.trackExitInProgress = true;
+
+    try {
+      await this.flushTrackQueueWithTimeout(
+        this.trackBatchFlushOnExitTimeoutMs
+      );
+    } finally {
+      process.exit(code);
+    }
+  }
+
+  private async flushTrackQueueWithTimeout(timeoutMs: number): Promise<void> {
+    const timeout = new Promise<void>((resolve) => {
+      const timer = setTimeout(() => resolve(), timeoutMs);
+      if (typeof timer.unref === 'function') {
+        timer.unref();
+      }
+    });
+
+    await Promise.race([this.flushTrackQueue(), timeout]);
+  }
+
+  private async flushTrackQueue(): Promise<void> {
+    if (this.trackQueue.length === 0) return;
+
+    if (this.trackFlushTimer) {
+      clearTimeout(this.trackFlushTimer);
+      this.trackFlushTimer = null;
+    }
+
+    const batch = this.trackQueue.splice(0, this.trackBatchMaxBatchSize);
+
+    for (const item of batch) {
+      try {
+        const body = this.normalizeTrackPayload(item.eventName, item.payload);
+        await this.platformPost('/v1/events/track', body, item.options);
+        item.resolve(true);
+      } catch (error) {
+        item.reject(error instanceof Error ? error : new Error(String(error)));
+      }
+    }
+
+    if (this.trackQueue.length > 0) {
+      await this.flushTrackQueue();
+    }
+  }
+
+  async identify(
+    externalId: string,
+    traits: IdentifyTraits = {},
+    options: PlatformCallOptions = {}
+  ): Promise<boolean> {
+    if (!externalId?.trim()) {
+      throw new FSPlatformError(
+        'externalId is required',
+        'validation',
+        422,
+        false
+      );
+    }
+
+    await this.platformPost(
+      '/v1/customers/identify',
+      {
+        externalId: externalId.trim(),
+        traits,
+      },
+      options
+    );
+
+    return true;
+  }
+
+  private async reportIncident(
+    payload: IncidentReportPayload,
+    options: PlatformCallOptions = {}
+  ): Promise<boolean> {
+    if (!payload?.code?.trim()) {
+      throw new FSPlatformError(
+        'incident.code is required',
+        'validation',
+        422,
+        false
+      );
+    }
+    if (!payload?.fingerprint?.trim()) {
+      throw new FSPlatformError(
+        'incident.fingerprint is required',
+        'validation',
+        422,
+        false
+      );
+    }
+
+    await this.platformPost('/v1/incidents/report', { ...payload }, options);
+
+    return true;
+  }
+
+  private async evaluateFlag<T = unknown>(
+    key: string,
+    context: FlagsContext = {},
+    options: PlatformCallOptions = {}
+  ): Promise<FlagDecision<T>> {
+    if (!key?.trim()) {
+      throw new FSPlatformError(
+        'flag key is required',
+        'validation',
+        422,
+        false
+      );
+    }
+
+    const response = await this.platformPost<{ results?: Record<string, any> }>(
+      '/v1/flags/evaluate',
+      {
+        flags: [key],
+        context,
+      },
+      options
+    );
+
+    const result = response?.results?.[key];
+    if (!result) {
+      return {
+        key,
+        enabled: false,
+        fetchedAt: new Date().toISOString(),
+        reason: 'missing_result',
+      };
+    }
+
+    return {
+      key,
+      enabled: !!result.enabled,
+      variantKey: result.variant,
+      value: (result.value ?? result.variant) as T | undefined,
+      reason: result.reason,
+      fetchedAt: new Date().toISOString(),
+    };
+  }
+
+  private normalizeTrackPayload(
+    eventName: string,
+    payload: TrackPayload
+  ): Record<string, unknown> {
+    const { occurredAt, user, company, properties, ...rest } = payload;
+
+    const hasExplicitProperties = typeof properties === 'object' && properties;
+    const hasTopLevelExtra = Object.keys(rest).length > 0;
+
+    return {
+      eventName,
+      ...(occurredAt ? { occurredAt } : {}),
+      ...(user ? { user } : {}),
+      ...(company ? { company } : {}),
+      ...(hasExplicitProperties
+        ? { properties }
+        : hasTopLevelExtra
+          ? { properties: rest }
+          : {}),
+    };
+  }
+
+  private resolvePlatformTarget(options: PlatformCallOptions): {
+    apiKey: string;
+    host: string;
+    protocol: 'http' | 'https';
+  } | null {
+    const urls = filterByTags(this.entries, options.tags);
+
+    for (const raw of urls) {
+      const processed = replacePlaceholders(raw, options.params ?? {});
+      if (!processed.toLowerCase().startsWith('fire://')) continue;
+
+      const fireProvider = this.providers.get('fire') as
+        | FireProvider
+        | undefined;
+      if (!fireProvider) continue;
+
+      const parsed = fireProvider.parseUrl(processed);
+      const apiKey = parsed.username;
+      const hostname = parsed.hostname;
+      const host = hostname
+        ? parsed.port
+          ? `${hostname}:${parsed.port}`
+          : hostname
+        : undefined;
+
+      if (!apiKey || !host) continue;
+
+      const isLocalHost =
+        parsed.hostname?.includes('localhost') ||
+        parsed.hostname === '127.0.0.1';
+      return {
+        apiKey,
+        host,
+        protocol: isLocalHost ? 'http' : 'https',
+      };
+    }
+
+    return null;
+  }
+
+  private async platformPost<T = unknown>(
+    endpoint: string,
+    body: Record<string, unknown>,
+    options: PlatformCallOptions = {}
+  ): Promise<T | undefined> {
+    const target = this.resolvePlatformTarget(options);
+
+    if (!target) {
+      const message =
+        'Fire Platform provider not configured. Add fire://<api_key> or fire://<api_key>@<host>.';
+      if (this.strictPlatformProvider) {
+        throw new FSPlatformError(message, 'configuration', undefined, false);
+      }
+      this.logger(message, 'warn');
+      return undefined;
+    }
+
+    const url = `${target.protocol}://${target.host}${endpoint}`;
+
+    let attempt = 0;
+    let lastError: Error | null = null;
+
+    while (attempt <= this.platformMaxRetries) {
+      attempt += 1;
+      const controller = new AbortController();
+      const timeout = setTimeout(
+        () => controller.abort(),
+        this.platformTimeoutMs
+      );
+
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${target.apiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(body),
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          const text = await response.text().catch(() => '');
+          const category: FSPlatformError['category'] =
+            response.status === 401 || response.status === 403
+              ? 'auth'
+              : response.status >= 400 && response.status < 500
+                ? 'validation'
+                : 'transient';
+          const retryable = this.shouldRetryStatus(response.status);
+
+          const err = new FSPlatformError(
+            `Fire Platform request failed (${response.status} ${response.statusText})`,
+            category,
+            response.status,
+            retryable,
+            text
+          );
+
+          if (!retryable || attempt > this.platformMaxRetries) {
+            throw err;
+          }
+
+          lastError = err;
+          await this.sleepWithJitter(attempt);
+          continue;
+        }
+
+        const data = (await response.json().catch(() => ({}))) as T;
+        return data;
+      } catch (error) {
+        const rawError =
+          error instanceof Error ? error : new Error(String(error));
+        const abortError = rawError.name === 'AbortError';
+
+        const err = abortError
+          ? new FSPlatformError(
+              'Fire Platform request timeout',
+              'transient',
+              408,
+              true
+            )
+          : rawError instanceof FSPlatformError
+            ? rawError
+            : new FSPlatformError(
+                rawError.message,
+                this.isTransientError(rawError) ? 'network' : 'validation',
+                undefined,
+                this.isTransientError(rawError)
+              );
+
+        if (!err.retryable) {
+          throw err;
+        }
+
+        if (attempt > this.platformMaxRetries) {
+          throw err;
+        }
+
+        lastError = err;
+        await this.sleepWithJitter(attempt);
+      } finally {
+        clearTimeout(timeout);
+      }
+    }
+
+    throw (
+      lastError ??
+      new FSPlatformError(
+        'Unknown platform request error',
+        'transient',
+        undefined,
+        true
+      )
+    );
+  }
+
+  private shouldRetryStatus(status: number): boolean {
+    if (status === 408 || status === 429) return true;
+    if (status >= 500) return true;
+    return false;
+  }
+
+  private isTransientError(error: Error): boolean {
+    const message = error.message.toLowerCase();
+    return (
+      message.includes('fetch failed') ||
+      message.includes('network') ||
+      message.includes('timeout') ||
+      message.includes('socket') ||
+      message.includes('econn')
+    );
+  }
+
+  private async sleepWithJitter(attempt: number): Promise<void> {
+    const base = 150;
+    const backoff = base * 2 ** Math.max(0, attempt - 1);
+    const jitter = Math.floor(Math.random() * 120);
+    const delay = backoff + jitter;
+    await new Promise((resolve) => setTimeout(resolve, delay));
   }
 
   /**

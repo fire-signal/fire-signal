@@ -1,12 +1,13 @@
-name: Publish to npm
+name: Publish React SDK to npm
 
 on:
   release:
     types: [created]
+  workflow_dispatch:
 
 jobs:
   publish:
-    if: ${{ !startsWith(github.event.release.tag_name, 'v-react-sdk-') }}
+    if: ${{ github.event_name == 'workflow_dispatch' || startsWith(github.event.release.tag_name, 'v-react-sdk-') }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -29,10 +30,17 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build
-        run: pnpm build
+      - name: Typecheck React SDK
+        run: pnpm --filter @fire-signal/react-sdk run typecheck
 
-      - name: Publish to npm
+      - name: Test React SDK
+        run: pnpm --filter @fire-signal/react-sdk run test:run
+
+      - name: Build React SDK
+        run: pnpm --filter @fire-signal/react-sdk run build
+
+      - name: Publish React SDK to npm
         run: npm publish --provenance --access public
+        working-directory: packages/react-sdk
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

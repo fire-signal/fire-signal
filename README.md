@@ -65,12 +65,22 @@ await fire.send({
 });
 ```
 
+## SDK Docs
+
+- React SDK complete docs: `packages/react-sdk/README.md`
+
 ---
 
 ## 📦 Installation
 
 ```bash
 npm install fire-signal
+```
+
+React package (flags + provider/hooks):
+
+```bash
+npm install @fire-signal/react-sdk fire-signal
 ```
 
 <details>
@@ -98,6 +108,89 @@ fire.add('fire://fp_live_your_api_key@api.fire-signal.com');
 await fire.send({
   title: 'Deploy Successful',
   body: 'Version 2.3.0 is live',
+});
+```
+
+### Platform Runtime APIs (track, identify, incident, flags)
+
+When `fire://` is configured, Fire-Signal also enables platform runtime APIs:
+
+```typescript
+import { FireSignal } from 'fire-signal';
+
+const fire = new FireSignal();
+
+// Host defaults to api.fire-signal.com
+fire.add('fire://fp_live_your_api_key');
+
+await fire.track('checkout.started', {
+  user: { id: 'user_123' },
+  properties: { plan: 'PLUS', value: 249.9 },
+});
+
+await fire.identify('user_123', {
+  email: 'ana@acme.com',
+  plan: 'PLUS',
+  locale: 'pt-BR',
+});
+
+await fire.incident.report({
+  code: 'payment_gateway_timeout',
+  fingerprint: 'checkout:payment:timeout',
+  severity: 'P1',
+  message: 'Provider timeout after 30s',
+});
+
+const promoCode = await fire.flags.getVariantValue<string>('checkout.promocode', {
+  user: { id: 'user_123' },
+  traits: { plan: 'PLUS' },
+});
+```
+
+Without `fire://`, these runtime APIs warn and no-op by default.
+Use `strictPlatformProvider: true` to throw instead.
+
+### Track batching and delivery guarantees
+
+`fire.track(...)` uses in-memory batching by default.
+
+- automatic flush happens when `maxBatchSize` is reached or `flushIntervalMs` elapses
+- `await fire.track(...)` resolves only after that event is actually posted (or rejects on error)
+- `await fire.flush()` forces immediate drain of queued track events
+- queue is in-memory only (not persisted), so hard crashes/kill before flush can lose queued events
+
+If you run short-lived jobs/workers, always await tracks and flush on shutdown:
+
+```typescript
+const fire = new FireSignal({
+  trackBatch: {
+    enabled: true,
+    flushIntervalMs: 1000,
+    maxBatchSize: 50,
+  },
+});
+
+await fire.track('checkout.started', { user: { id: 'user_123' } });
+await fire.flush(); // call before graceful shutdown
+```
+
+You can also enable automatic best-effort flush on process exit signals:
+
+```typescript
+const fire = new FireSignal({
+  trackBatch: {
+    enabled: true,
+    autoFlushOnExit: true,
+    flushOnExitTimeoutMs: 1500,
+  },
+});
+```
+
+If you need immediate per-call delivery (no queue), disable batching:
+
+```typescript
+const fire = new FireSignal({
+  trackBatch: { enabled: false },
 });
 ```
 
@@ -192,9 +285,17 @@ Examples:
 # Public SaaS (recommended)
 fire://fp_live_your_api_key@api.fire-signal.com
 
+# Frontend publishable key (restricted scopes)
+fire://fp_pub_your_publishable_key@api.fire-signal.com
+
 # Dedicated/self-hosted API host
 fire://fp_live_your_api_key@notify.company.internal
 ```
+
+Key types:
+
+- `fp_live_...` (`SECRET`): server-side key, broader scopes, never expose in browser/mobile client bundles
+- `fp_pub_...` (`PUBLISHABLE`): restricted key for client-side usage (for example flag evaluation and safe runtime calls)
 
 Common errors:
 
@@ -2162,11 +2263,23 @@ const fire = new FireSignal({
     message?: (error: Error, context: FSErrorContext) => string;
     callback?: (error: Error, context: FSErrorContext) => void;
   };
+
+  trackBatch?: {
+    enabled?: boolean;
+    flushIntervalMs?: number;
+    maxBatchSize?: number;
+    maxQueueSize?: number;
+    autoFlushOnExit?: boolean;
+    flushOnExitTimeoutMs?: number;
+  };
 });
 
 fire.add(urls: string | string[], tags?: string[]);
 await fire.loadConfig();
 await fire.send(message: FSMessage, options?: SendOptions);
+await fire.track(eventName: string, payload?: TrackPayload, options?: PlatformCallOptions);
+await fire.flush();
+await fire.dispose();
 ```
 
 ```typescript
@@ -2207,6 +2320,25 @@ interface FSAttachment {
   contentType?: string;
 }
 ```
+
+---
+
+## ✅ Release Checklist
+
+Before release/publish, run this checklist in `fire-signal`:
+
+```bash
+pnpm typecheck:all
+pnpm test:all
+pnpm build:all
+```
+
+Manual checks:
+
+- README examples match current behavior (`fire://`, `fp_live_*`, `fp_pub_*`, track batching/flush)
+- React SDK docs are up to date (`packages/react-sdk/README.md`)
+- optional local contract validation with `FS_E2E_HOST` and `FS_E2E_API_KEY`
+- changelog/version bump is aligned with the release scope
 
 ---
 

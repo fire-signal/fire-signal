@@ -6,7 +6,6 @@ on:
 
 jobs:
   publish:
-    if: ${{ !startsWith(github.event.release.tag_name, 'v-react-sdk-') }}
     runs-on: ubuntu-latest
     permissions:
       contents: read

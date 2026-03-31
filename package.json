@@ -22,7 +22,6 @@
   ],
   "scripts": {
     "build": "tsup",
-    "build:all": "pnpm -r run build",
     "dev": "tsup --watch",
     "dev:cli": "tsx src/cli/index.ts",
     "lint": "eslint src --ext .ts",
@@ -31,9 +30,7 @@
     "format:check": "prettier --check \"src/**/*.ts\"",
     "test": "vitest",
     "test:run": "vitest run",
-    "test:all": "pnpm run test:run && pnpm --filter @fire-signal/react-sdk run typecheck && pnpm --filter @fire-signal/react-sdk run test:run",
     "typecheck": "tsc --noEmit",
-    "typecheck:all": "pnpm -r run typecheck",
     "prepublishOnly": "pnpm run build",
     "prepare": "husky"
   },

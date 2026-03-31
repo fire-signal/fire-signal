@@ -67,7 +67,7 @@ await fire.send({
 
 ## SDK Docs
 
-- React SDK complete docs: `packages/react-sdk/README.md`
+- React SDK complete docs: `https://github.com/fire-signal/fire-signal-react-sdk#readme`
 
 ---
 
@@ -2328,15 +2328,15 @@ interface FSAttachment {
 Before release/publish, run this checklist in `fire-signal`:
 
 ```bash
-pnpm typecheck:all
-pnpm test:all
-pnpm build:all
+pnpm typecheck
+pnpm test:run
+pnpm build
 ```
 
 Manual checks:
 
 - README examples match current behavior (`fire://`, `fp_live_*`, `fp_pub_*`, track batching/flush)
-- React SDK docs are up to date (`packages/react-sdk/README.md`)
+- React SDK docs are up to date (`https://github.com/fire-signal/fire-signal-react-sdk#readme`)
 - optional local contract validation with `FS_E2E_HOST` and `FS_E2E_API_KEY`
 - changelog/version bump is aligned with the release scope
 

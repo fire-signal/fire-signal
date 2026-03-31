@@ -76,8 +76,8 @@ importers:
   packages/react-sdk:
     dependencies:
       fire-signal:
-        specifier: workspace:*
-        version: link:../..
+        specifier: ^0.5.0
+        version: 0.5.0
       react:
         specifier: '>=18.0.0'
         version: 19.2.4
@@ -1423,6 +1423,11 @@ packages:
   find-up@7.0.0:
     resolution: {integrity: sha512-YyZM99iHrqLKjmt4LJDj58KI+fYyufRLBSYcqycxf//KpBk9FoewoGX0450m9nB44qrZnovzC2oeP5hUibxc/g==}
     engines: {node: '>=18'}
+
+  fire-signal@0.5.0:
+    resolution: {integrity: sha512-OWP75fLlLVPzgiuWNuwZnqtfJMQN7rNV88YhMieuE3gQ1xoNXA8DrTUeVLw8RxNbbxTabOxpmKBkw2xZVKOQPw==}
+    engines: {node: '>=18.0.0'}
+    hasBin: true
 
   fix-dts-default-cjs-exports@1.0.1:
     resolution: {integrity: sha512-pVIECanWFC61Hzl2+oOCtoJ3F17kglZC/6N94eRWycFgBH35hHx0Li604ZIzhseh97mf2p0cv7vVrOZGoqhlEg==}
@@ -4009,6 +4014,13 @@ snapshots:
       locate-path: 7.2.0
       path-exists: 5.0.0
       unicorn-magic: 0.1.0
+
+  fire-signal@0.5.0:
+    dependencies:
+      commander: 12.1.0
+      handlebars: 4.7.8
+      nodemailer: 6.10.1
+      yaml: 2.8.2
 
   fix-dts-default-cjs-exports@1.0.1:
     dependencies:

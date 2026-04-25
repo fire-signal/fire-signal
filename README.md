@@ -49,7 +49,12 @@ import { FireSignal } from 'fire-signal';
 
 const fire = new FireSignal({
   urls: [
+    // Secret key (server-side only)
     'fire://fp_live_your_api_key',
+
+    // Publishable key (safe for client-side / browser)
+    'fire://fp_pub_your_publishable_key',
+
     'discord://webhookId/webhookToken',
     'tgram://botToken/chatId',
     'rocketchat://chat.company.com/webhookToken',
